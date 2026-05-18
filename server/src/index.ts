@@ -3,7 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import { config } from './config/index.js';
-import { connectDB } from './config/database.js';
+import { connectDB } from './config/db.js';
 import routes from './routes/index.js';
 
 const app = express();
