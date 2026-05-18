@@ -1,5 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
-import { IUser, UserRole } from '../types/index.js';
+import { UserRole, IUser } from '../types/index.js';
 
 export interface IUserDocument extends Omit<IUser, '_id'>, Document {}
 
@@ -30,9 +30,9 @@ const userSchema = new Schema<IUserDocument>(
       type: String,
       enum: {
         values: Object.values(UserRole),
-        message: 'Invalid role specified',
+        message: 'Invalid role. Must be admin or sales',
       },
-      default: UserRole.SalesUser,
+      default: UserRole.Sales,
     },
   },
   {
@@ -40,6 +40,6 @@ const userSchema = new Schema<IUserDocument>(
   }
 );
 
-userSchema.index({ email: 1 });
+userSchema.index({ email: 1 }, { unique: true });
 
 export const User = mongoose.model<IUserDocument>('User', userSchema);
