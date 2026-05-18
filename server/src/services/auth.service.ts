@@ -2,15 +2,20 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { User, IUserDocument } from '../models/index.js';
 import { config } from '../config/index.js';
-import { IUser, UserRole, AuthPayload } from '../types/index.js';
+import { IUserWithoutPassword, UserRole, AuthPayload } from '../types/index.js';
+
+export interface AuthResponse {
+  user: IUserWithoutPassword;
+  token: string;
+}
 
 export class AuthService {
   async register(
     name: string,
     email: string,
     password: string,
-    role: UserRole = UserRole.SalesUser
-  ): Promise<Omit<IUser, 'password'>> {
+    role?: UserRole
+  ): Promise<AuthResponse> {
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       throw new Error('Email already registered');
@@ -21,17 +26,14 @@ export class AuthService {
       name,
       email,
       password: hashedPassword,
-      role,
+      role: role || UserRole.Sales,
     });
 
     const token = this.generateToken(user);
-    return { ...this.sanitizeUser(user), token };
+    return { user: this.sanitizeUser(user), token };
   }
 
-  async login(
-    email: string,
-    password: string
-  ): Promise<Omit<IUser, 'password'> & { token: string }> {
+  async login(email: string, password: string): Promise<AuthResponse> {
     const user = await User.findOne({ email }).select('+password');
     if (!user) {
       throw new Error('Invalid email or password');
@@ -43,14 +45,14 @@ export class AuthService {
     }
 
     const token = this.generateToken(user);
-    return { ...this.sanitizeUser(user), token };
+    return { user: this.sanitizeUser(user), token };
   }
 
   async getUserById(userId: string): Promise<IUserDocument | null> {
     return User.findById(userId);
   }
 
-  async getAllUsers(): Promise<Omit<IUser, 'password'>[]> {
+  async getAllUsers(): Promise<IUserWithoutPassword[]> {
     const users = await User.find().sort({ createdAt: -1 });
     return users.map(this.sanitizeUser);
   }
@@ -67,7 +69,7 @@ export class AuthService {
     });
   }
 
-  private sanitizeUser(user: IUserDocument): Omit<IUser, 'password'> {
+  private sanitizeUser(user: IUserDocument): IUserWithoutPassword {
     return {
       _id: user._id.toString(),
       name: user.name,

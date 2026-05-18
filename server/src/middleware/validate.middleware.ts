@@ -1,18 +1,28 @@
 import { Request, Response, NextFunction } from 'express';
-import { validationResult } from 'express-validator';
-import { sendError } from '../utils/response.js';
+import { ZodSchema, ZodError } from 'zod';
+import { ApiError } from '../utils/ApiError.js';
 
-export const validate = (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): void => {
-  const errors = validationResult(req);
+type ValidationTarget = 'body' | 'query' | 'params';
 
-  if (!errors.isEmpty()) {
-    sendError(res, 400, 'Validation failed', errors.array());
-    return;
-  }
+export const validate = (schema: ZodSchema, target: ValidationTarget = 'body') => {
+  return (req: Request, _res: Response, next: NextFunction): void => {
+    const data = target === 'body' ? req.body : target === 'query' ? req.query : req.params;
 
-  next();
+    const result = schema.safeParse(data);
+
+    if (!result.success) {
+      const errors = result.error.errors.map((e) => e.message);
+      throw new ApiError(400, 'Validation failed', errors);
+    }
+
+    if (target === 'body') {
+      req.body = result.data;
+    } else if (target === 'query') {
+      req.query = result.data;
+    } else {
+      req.params = result.data;
+    }
+
+    next();
+  };
 };
