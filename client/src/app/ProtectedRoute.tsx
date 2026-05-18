@@ -1,12 +1,14 @@
 import { Navigate } from 'react-router-dom';
-import { useAuthStore } from '../store';
+import { useAuth } from '../../features/auth';
 
-export function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-  return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />;
+interface ProtectedRouteProps {
+  children: React.ReactNode;
 }
 
-export function PublicRoute({ children }: { children: React.ReactNode }) {
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-  return !isAuthenticated ? <>{children}</> : <Navigate to="/dashboard" replace />;
+export function ProtectedRoute({ children }: ProtectedRouteProps) {
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) return null;
+
+  return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />;
 }
