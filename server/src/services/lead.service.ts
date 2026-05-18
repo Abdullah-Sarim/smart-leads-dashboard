@@ -22,6 +22,14 @@ export interface GetLeadsResult {
   meta: PaginationMeta;
 }
 
+export interface LeadStats {
+  total: number;
+  new: number;
+  contacted: number;
+  qualified: number;
+  lost: number;
+}
+
 export class LeadService {
   async createLead(data: { name: string; email: string; status?: LeadStatus; source?: LeadSource }, userId: string): Promise<ILeadDocument> {
     const lead = await Lead.create({
@@ -107,6 +115,24 @@ export class LeadService {
     };
 
     return { leads, meta };
+  }
+
+  async getStats(): Promise<LeadStats> {
+    const [total, newCount, contactedCount, qualifiedCount, lostCount] = await Promise.all([
+      Lead.countDocuments(),
+      Lead.countDocuments({ status: LeadStatus.New }),
+      Lead.countDocuments({ status: LeadStatus.Contacted }),
+      Lead.countDocuments({ status: LeadStatus.Qualified }),
+      Lead.countDocuments({ status: LeadStatus.Lost }),
+    ]);
+
+    return {
+      total,
+      new: newCount,
+      contacted: contactedCount,
+      qualified: qualifiedCount,
+      lost: lostCount,
+    };
   }
 }
 

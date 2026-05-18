@@ -1,4 +1,3 @@
-import { Response } from 'express';
 import { leadService } from '../services/index.js';
 import { AuthRequest } from '../middleware/index.js';
 import { ApiError } from '../utils/ApiError.js';
@@ -83,6 +82,11 @@ export const LeadController = {
     res.setHeader('Content-Type', 'text/csv');
     res.setHeader('Content-Disposition', 'attachment; filename=leads.csv');
     res.send(csv);
+  }),
+
+  getStats: catchAsync(async (_req: AuthRequest, res) => {
+    const stats = await leadService.getStats();
+    ApiResponse.sendSuccess(res, stats);
   }),
 };
 

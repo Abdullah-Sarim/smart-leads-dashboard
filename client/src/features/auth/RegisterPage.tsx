@@ -6,7 +6,6 @@ import { registerSchema, type RegisterInput } from './auth.schema';
 import { useAuth } from './AuthContext';
 import { Button, Input, Select } from '../../components/common';
 import { isApiError } from '../../lib';
-import toast from 'react-hot-toast';
 import { LayoutDashboard } from 'lucide-react';
 
 export function RegisterPage() {
@@ -24,7 +23,6 @@ export function RegisterPage() {
     setLoading(true);
     try {
       await registerUser(data);
-      toast.success('Account created successfully!');
     } catch (err) {
       const message = isApiError(err) ? err.message : 'Registration failed';
       setError('root', { message });

@@ -5,8 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { loginSchema, type LoginInput } from './auth.schema';
 import { useAuth } from './AuthContext';
 import { Button, Input } from '../../components/common';
-import { ApiError, isApiError } from '../../lib';
-import toast from 'react-hot-toast';
+import { isApiError } from '../../lib';
 import { LayoutDashboard } from 'lucide-react';
 
 export function LoginPage() {
@@ -24,7 +23,6 @@ export function LoginPage() {
     setLoading(true);
     try {
       await login(data);
-      toast.success('Welcome back!');
     } catch (err) {
       const message = isApiError(err) ? err.message : 'Login failed';
       setError('root', { message });

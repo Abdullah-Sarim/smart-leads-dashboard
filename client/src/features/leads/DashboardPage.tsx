@@ -1,6 +1,7 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useAuth } from '../../features/auth';
-import { leadsApi, LeadsTable, LeadFilters, LeadQueryParams, Lead } from '../../features/leads';
+import { leadsApi, LeadsTable, LeadFilters, LeadQueryParams, Lead, LeadStats, TableSkeleton } from '../../features/leads';
+import { StatsCards } from './StatsCards';
 import { FullPageLoader, EmptyState, ErrorMessage, Pagination, Button } from '../../components/common';
 import { Modal, ConfirmDialog } from '../../components/common';
 import { Input, Select } from '../../components/common';
@@ -23,6 +24,8 @@ type LeadFormValues = z.infer<typeof leadSchema>;
 export function DashboardPage() {
   const { user } = useAuth();
   const [leads, setLeads] = useState<Lead[]>([]);
+  const [stats, setStats] = useState<LeadStats | null>(null);
+  const [statsLoading, setStatsLoading] = useState(false);
   const [meta, setMeta] = useState({ page: 1, limit: 10, total: 0, totalPages: 0, hasNextPage: false, hasPrevPage: false });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -38,6 +41,18 @@ export function DashboardPage() {
     resolver: zodResolver(leadSchema),
   });
 
+  const fetchStats = useCallback(async () => {
+    setStatsLoading(true);
+    try {
+      const data = await leadsApi.getStats();
+      setStats(data);
+    } catch {
+      // Stats are non-critical, silently fail
+    } finally {
+      setStatsLoading(false);
+    }
+  }, []);
+
   const fetchLeads = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -51,6 +66,14 @@ export function DashboardPage() {
       setLoading(false);
     }
   }, [filters]);
+
+  useEffect(() => {
+    fetchLeads();
+  }, [fetchLeads]);
+
+  useEffect(() => {
+    fetchStats();
+  }, [fetchStats]);
 
   const handleFiltersChange = useCallback((newFilters: LeadQueryParams) => {
     setFilters(newFilters);
@@ -86,12 +109,13 @@ export function DashboardPage() {
       toast.success('Lead deleted successfully');
       setDeleteTarget(null);
       fetchLeads();
+      fetchStats();
     } catch (err) {
       toast.error(isApiError(err) ? err.message : 'Delete failed');
     } finally {
       setDeleting(false);
     }
-  }, [deleteTarget, fetchLeads]);
+  }, [deleteTarget, fetchLeads, fetchStats]);
 
   const onSubmit = async (data: LeadFormValues) => {
     setSubmitting(true);
@@ -107,6 +131,7 @@ export function DashboardPage() {
       setEditingLead(null);
       reset();
       fetchLeads();
+      fetchStats();
     } catch (err) {
       toast.error(isApiError(err) ? err.message : 'Operation failed');
     } finally {
@@ -140,10 +165,12 @@ export function DashboardPage() {
         </Button>
       </div>
 
+      <StatsCards stats={stats} loading={statsLoading} />
+
       <LeadFilters filters={filters} onFiltersChange={handleFiltersChange} onExport={handleExport} total={meta.total} />
 
       {loading && leads.length > 0 && (
-        <div className="flex justify-center py-4"><FullPageLoader /></div>
+        <div className="py-4"><TableSkeleton /></div>
       )}
 
       {error ? (

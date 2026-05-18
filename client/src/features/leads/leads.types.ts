@@ -57,3 +57,11 @@ export interface LeadsResponse {
   leads: Lead[];
   meta: PaginationMeta;
 }
+
+export interface LeadStats {
+  total: number;
+  new: number;
+  contacted: number;
+  qualified: number;
+  lost: number;
+}

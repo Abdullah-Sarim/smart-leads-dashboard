@@ -6,6 +6,7 @@ import type {
   LeadsResponse,
   ApiResponse,
   PaginationMeta,
+  LeadStats,
 } from './leads.types';
 
 export const leadsApi = {
@@ -41,5 +42,10 @@ export const leadsApi = {
     a.download = `leads-${Date.now()}.csv`;
     a.click();
     URL.revokeObjectURL(url);
+  },
+
+  getStats: async (): Promise<LeadStats> => {
+    const res = await api.get<ApiResponse<LeadStats>>('/leads/stats');
+    return res.data.data;
   },
 };
