@@ -1,137 +1,76 @@
 import { Lead, ILeadDocument } from '../models/index.js';
-import { LeadStatus, LeadSource, QueryParams, PaginationMeta } from '../types/index.js';
+import { LeadStatus, LeadSource } from '../types/index.js';
+
+export interface PaginationMeta {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPrevPage: boolean;
+}
+
+export interface LeadFilters {
+  status?: LeadStatus;
+  source?: LeadSource;
+  search?: string;
+}
+
+export interface GetLeadsResult {
+  leads: ILeadDocument[];
+  meta: PaginationMeta;
+}
 
 export class LeadService {
-  async createLead(
-    data: { name: string; email: string; status?: LeadStatus; source?: LeadSource },
-    userId: string
-  ): Promise<ILeadDocument> {
-    return Lead.create({
-      ...data,
+  async createLead(data: { name: string; email: string; status?: LeadStatus; source?: LeadSource }, userId: string): Promise<ILeadDocument> {
+    const lead = await Lead.create({
+      name: data.name,
+      email: data.email,
+      status: data.status || LeadStatus.New,
+      source: data.source || LeadSource.Website,
       createdBy: userId,
     });
+    return lead;
   }
 
-  async getLeads(
-    params: QueryParams,
-    userId: string,
-    userRole: string
-  ): Promise<{ leads: ILeadDocument[]; meta: PaginationMeta }> {
-    const {
-      page = 1,
-      limit = 10,
-      search,
-      status,
-      source,
-      sortBy = 'createdAt',
-      order = 'desc',
-    } = params;
-
+  async getLeads(filters: LeadFilters, page = 1, limit = 10, sort: 'latest' | 'oldest' = 'latest'): Promise<GetLeadsResult> {
     const query: Record<string, unknown> = {};
 
-    if (userRole !== 'Admin') {
-      query.createdBy = userId;
+    if (filters.status) {
+      query.status = filters.status;
     }
 
-    if (search) {
+    if (filters.source) {
+      query.source = filters.source;
+    }
+
+    if (filters.search) {
       query.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { email: { $regex: search, $options: 'i' } },
+        { name: { $regex: filters.search, $options: 'i' } },
+        { email: { $regex: filters.search, $options: 'i' } },
       ];
     }
 
-    if (status) {
-      query.status = status;
-    }
-
-    if (source) {
-      query.source = source;
-    }
-
+    const sortOrder = sort === 'latest' ? -1 : 1;
     const skip = (page - 1) * limit;
-    const sortOrder = order === 'asc' ? 1 : -1;
 
     const [leads, total] = await Promise.all([
-      Lead.find(query)
-        .sort({ [sortBy]: sortOrder })
-        .skip(skip)
-        .limit(limit)
-        .populate('createdBy', 'name email'),
+      Lead.find(query).sort({ createdAt: sortOrder }).skip(skip).limit(limit).populate('createdBy', '_id name'),
       Lead.countDocuments(query),
     ]);
 
+    const totalPages = Math.ceil(total / limit);
+
     const meta: PaginationMeta = {
-      total,
       page,
       limit,
-      totalPages: Math.ceil(total / limit),
+      total,
+      totalPages,
+      hasNextPage: page < totalPages,
+      hasPrevPage: page > 1,
     };
 
     return { leads, meta };
-  }
-
-  async getLeadById(id: string, userId: string, userRole: string): Promise<ILeadDocument | null> {
-    const lead = await Lead.findById(id);
-    if (!lead) return null;
-
-    if (userRole !== 'Admin' && lead.createdBy.toString() !== userId) {
-      return null;
-    }
-
-    return lead;
-  }
-
-  async updateLead(
-    id: string,
-    data: Partial<{ name: string; email: string; status: LeadStatus; source: LeadSource }>,
-    userId: string,
-    userRole: string
-  ): Promise<ILeadDocument | null> {
-    const lead = await this.getLeadById(id, userId, userRole);
-    if (!lead) return null;
-
-    Object.assign(lead, data);
-    await lead.save();
-    return lead;
-  }
-
-  async deleteLead(id: string, userId: string, userRole: string): Promise<boolean> {
-    const lead = await this.getLeadById(id, userId, userRole);
-    if (!lead) return false;
-
-    await Lead.findByIdAndDelete(id);
-    return true;
-  }
-
-  async exportLeads(
-    params: QueryParams,
-    userId: string,
-    userRole: string
-  ): Promise<ILeadDocument[]> {
-    const { search, status, source, sortBy = 'createdAt', order = 'desc' } = params;
-
-    const query: Record<string, unknown> = {};
-
-    if (userRole !== 'Admin') {
-      query.createdBy = userId;
-    }
-
-    if (search) {
-      query.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { email: { $regex: search, $options: 'i' } },
-      ];
-    }
-
-    if (status) {
-      query.status = status;
-    }
-
-    if (source) {
-      query.source = source;
-    }
-
-    return Lead.find(query).sort({ [sortBy]: order === 'asc' ? 1 : -1 });
   }
 }
 
