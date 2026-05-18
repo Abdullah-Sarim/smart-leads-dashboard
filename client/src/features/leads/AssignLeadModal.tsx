@@ -1,10 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Modal, Button } from '../../components/common';
-import { User } from '../../types';
-import { usersApi } from '../auth/auth.api';
-import { leadsApi, Lead } from '../leads';
+import { Lead } from '../leads';
+import { useSalesUsers, useAssignLead } from '../../lib/queries';
 import toast from 'react-hot-toast';
-import { isApiError } from '../../lib';
 
 interface AssignLeadModalProps {
   isOpen: boolean;
@@ -14,33 +12,24 @@ interface AssignLeadModalProps {
 }
 
 export function AssignLeadModal({ isOpen, onClose, lead, onSuccess }: AssignLeadModalProps) {
-  const [users, setUsers] = useState<User[]>([]);
   const [selectedUserId, setSelectedUserId] = useState('');
-  const [assigning, setAssigning] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const { data: users = [], isLoading } = useSalesUsers();
+  const assignLead = useAssignLead();
 
   useEffect(() => {
-    if (isOpen) {
-      setSelectedUserId(lead?.assignedTo || '');
-      setLoading(true);
-      usersApi.getAllUsers(1, 50)
-        .then(res => setUsers(res.users.filter(u => u.role === 'sales' && u.isActive)))
-        .catch(() => {})
-        .finally(() => setLoading(false));
+    if (isOpen && lead) {
+      setSelectedUserId(lead.assignedTo || '');
     }
   }, [isOpen, lead]);
 
   const handleAssign = async () => {
     if (!lead) return;
-    setAssigning(true);
     try {
-      await leadsApi.assignLead(lead._id, selectedUserId || null);
+      await assignLead.mutateAsync({ id: lead._id, assignedTo: selectedUserId || null });
       toast.success(selectedUserId ? 'Lead assigned successfully' : 'Lead unassigned successfully');
       onSuccess();
-    } catch (err) {
-      toast.error(isApiError(err) ? err.message : 'Assign failed');
-    } finally {
-      setAssigning(false);
+    } catch {
+      toast.error('Assign failed');
     }
   };
 
@@ -51,8 +40,8 @@ export function AssignLeadModal({ isOpen, onClose, lead, onSuccess }: AssignLead
       title="Assign Lead"
       footer={
         <>
-          <Button variant="secondary" onClick={onClose} disabled={assigning}>Cancel</Button>
-          <Button onClick={handleAssign} loading={assigning}>Assign</Button>
+          <Button variant="secondary" onClick={onClose} disabled={assignLead.isPending}>Cancel</Button>
+          <Button onClick={handleAssign} loading={assignLead.isPending}>Assign</Button>
         </>
       }
     >
@@ -63,7 +52,7 @@ export function AssignLeadModal({ isOpen, onClose, lead, onSuccess }: AssignLead
         <select
           value={selectedUserId}
           onChange={(e) => setSelectedUserId(e.target.value)}
-          disabled={loading}
+          disabled={isLoading}
           className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400"
         >
           <option value="">Unassign</option>

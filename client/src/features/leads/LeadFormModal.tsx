@@ -1,13 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { Modal, Button, Input, Select } from '../../components/common';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { UserRound, CircleDot } from 'lucide-react';
-import { Lead, LeadStatus, LeadSource, leadsApi } from '../leads';
-import { useAuth } from '../auth/AuthContext';
+import { Lead, LeadStatus, LeadSource } from '../leads';
+import { useCreateLead, useUpdateLead } from '../../lib/queries';
 import toast from 'react-hot-toast';
-import { isApiError } from '../../lib';
 
 const leadSchema = z.object({
   name: z.string().trim().min(2, 'Name must be at least 2 characters'),
@@ -26,12 +25,14 @@ interface LeadFormModalProps {
 }
 
 export function LeadFormModal({ isOpen, onClose, editingLead, onSuccess }: LeadFormModalProps) {
-  const [submitting, setSubmitting] = useState(false);
-
   const { register, handleSubmit, formState: { errors }, reset: resetForm } = useForm<LeadFormValues>({
     resolver: zodResolver(leadSchema),
     defaultValues: { name: '', email: '', status: LeadStatus.New, source: LeadSource.Website },
   });
+
+  const createLead = useCreateLead();
+  const updateLead = useUpdateLead();
+  const isPending = createLead.isPending || updateLead.isPending;
 
   useEffect(() => {
     if (isOpen && editingLead) {
@@ -41,21 +42,18 @@ export function LeadFormModal({ isOpen, onClose, editingLead, onSuccess }: LeadF
     }
   }, [isOpen, editingLead, resetForm]);
 
-  const onSubmit = async (data: LeadFormValues) => {
-    setSubmitting(true);
+  const onFormSubmit = async (data: LeadFormValues) => {
     try {
       if (editingLead) {
-        await leadsApi.updateLead(editingLead._id, data);
+        await updateLead.mutateAsync({ id: editingLead._id, data });
         toast.success('Lead updated successfully');
       } else {
-        await leadsApi.createLead(data);
+        await createLead.mutateAsync(data);
         toast.success('Lead created successfully');
       }
       onSuccess();
-    } catch (err) {
-      toast.error(isApiError(err) ? err.message : 'Operation failed');
-    } finally {
-      setSubmitting(false);
+    } catch {
+      toast.error('Operation failed');
     }
   };
 
@@ -71,8 +69,8 @@ export function LeadFormModal({ isOpen, onClose, editingLead, onSuccess }: LeadF
       title={editingLead ? 'Edit Lead' : 'Add New Lead'}
       footer={
         <>
-          <Button variant="secondary" onClick={handleClose} disabled={submitting}>Cancel</Button>
-          <Button onClick={handleSubmit(onSubmit)} loading={submitting}>{editingLead ? 'Update' : 'Create'}</Button>
+          <Button variant="secondary" onClick={handleClose} disabled={isPending}>Cancel</Button>
+          <Button onClick={handleSubmit(onFormSubmit)} loading={isPending}>{editingLead ? 'Update' : 'Create'}</Button>
         </>
       }
     >

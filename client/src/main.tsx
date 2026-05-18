@@ -2,10 +2,20 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './features/auth';
 import { ThemeProvider } from './hooks';
 import App from './App';
 import './index.css';
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean }> {
   constructor(props: { children: React.ReactNode }) {
@@ -33,13 +43,15 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { has
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <ErrorBoundary>
-    <BrowserRouter>
-      <ThemeProvider>
-        <AuthProvider>
-          <App />
-          <Toaster position="top-right" toastOptions={{ duration: 3000 }} />
-        </AuthProvider>
-      </ThemeProvider>
-    </BrowserRouter>
+    <QueryClientProvider client={queryClient}>
+      <BrowserRouter>
+        <ThemeProvider>
+          <AuthProvider>
+            <App />
+            <Toaster position="top-right" toastOptions={{ duration: 3000 }} />
+          </AuthProvider>
+        </ThemeProvider>
+      </BrowserRouter>
+    </QueryClientProvider>
   </ErrorBoundary>
 );

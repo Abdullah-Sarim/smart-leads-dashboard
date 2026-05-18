@@ -1,43 +1,27 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { useAuth } from '../../features/auth';
-import { leadsApi, LeadsTable, LeadFilters, LeadQueryParams, Lead, TableSkeleton } from '../../features/leads';
+import { LeadsTable, LeadFilters, LeadQueryParams, Lead, TableSkeleton } from '../../features/leads';
 import { FullPageLoader, EmptyState, ErrorMessage, Pagination, Button } from '../../components/common';
 import { ConfirmDialog } from '../../components/common';
 import { LeadFormModal } from './LeadFormModal';
 import { AssignLeadModal } from './AssignLeadModal';
+import { useLeads, useDeleteLead } from '../../lib/queries';
 import { Plus } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { isApiError } from '../../lib';
 
 export function LeadsPage() {
   const { user } = useAuth();
-  const [leads, setLeads] = useState<Lead[]>([]);
-  const [meta, setMeta] = useState({ page: 1, limit: 10, total: 0, totalPages: 0, hasNextPage: false, hasPrevPage: false });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [filters, setFilters] = useState<LeadQueryParams>({ sort: 'latest', page: 1 });
   const [showForm, setShowForm] = useState(false);
   const [editingLead, setEditingLead] = useState<Lead | null>(null);
-  const [exporting, setExporting] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Lead | null>(null);
-  const [deleting, setDeleting] = useState(false);
   const [assignTarget, setAssignTarget] = useState<Lead | null>(null);
 
-  const fetchLeads = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await leadsApi.getLeads(filters);
-      setLeads(res.leads);
-      setMeta(res.meta);
-    } catch (err) {
-      setError(isApiError(err) ? err.message : 'Failed to load leads');
-    } finally {
-      setLoading(false);
-    }
-  }, [filters]);
+  const { data, isLoading, error, refetch } = useLeads(filters);
+  const deleteLead = useDeleteLead();
 
-  useEffect(() => { fetchLeads(); }, [fetchLeads]);
+  const leads = data?.leads ?? [];
+  const meta = data?.meta ?? { page: 1, limit: 10, total: 0, totalPages: 0, hasNextPage: false, hasPrevPage: false };
 
   const handlePageChange = useCallback((page: number) => {
     setFilters((f) => ({ ...f, page }));
@@ -47,18 +31,6 @@ export function LeadsPage() {
     setFilters(newFilters);
   }, []);
 
-  const handleExport = useCallback(async () => {
-    setExporting(true);
-    try {
-      await leadsApi.exportLeadsCsv(filters);
-      toast.success('CSV exported successfully');
-    } catch {
-      toast.error('Export failed');
-    } finally {
-      setExporting(false);
-    }
-  }, [filters]);
-
   const handleEdit = useCallback((lead: Lead) => {
     setEditingLead(lead);
     setShowForm(true);
@@ -66,30 +38,26 @@ export function LeadsPage() {
 
   const handleDeleteConfirm = useCallback(async () => {
     if (!deleteTarget) return;
-    setDeleting(true);
     try {
-      await leadsApi.deleteLead(deleteTarget._id);
+      await deleteLead.mutateAsync(deleteTarget._id);
       toast.success('Lead deleted successfully');
       setDeleteTarget(null);
-      fetchLeads();
-    } catch (err) {
-      toast.error(isApiError(err) ? err.message : 'Delete failed');
-    } finally {
-      setDeleting(false);
+    } catch {
+      toast.error('Delete failed');
     }
-  }, [deleteTarget, fetchLeads]);
-
-  const handleOpenForm = () => {
-    setEditingLead(null);
-    setShowForm(true);
-  };
+  }, [deleteTarget, deleteLead]);
 
   const handleFormClose = () => {
     setShowForm(false);
     setEditingLead(null);
   };
 
-  if (loading && leads.length === 0) return <FullPageLoader />;
+  const handleFormSuccess = () => {
+    setShowForm(false);
+    setEditingLead(null);
+  };
+
+  if (isLoading && leads.length === 0) return <FullPageLoader />;
 
   return (
     <div className="h-full flex flex-col max-w-7xl mx-auto">
@@ -98,20 +66,20 @@ export function LeadsPage() {
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">All Leads</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400">View, search, and manage all leads</p>
         </div>
-        <Button onClick={handleOpenForm} className="w-full sm:w-auto">
+        <Button onClick={() => { setEditingLead(null); setShowForm(true); }} className="w-full sm:w-auto">
           <Plus className="w-4 h-4" /> Add Lead
         </Button>
       </div>
 
       <div className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-950 pb-3">
-        <LeadFilters filters={filters} onFiltersChange={handleFiltersChange} onExport={handleExport} total={meta.total} />
+        <LeadFilters filters={filters} onFiltersChange={handleFiltersChange} onExport={() => {}} total={meta.total} />
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        {loading && leads.length > 0 ? (
+        {isLoading && leads.length > 0 ? (
           <div className="py-4"><TableSkeleton /></div>
         ) : error ? (
-          <ErrorMessage message={error} onRetry={fetchLeads} />
+          <ErrorMessage message={(error as Error).message} onRetry={refetch} />
         ) : leads.length === 0 ? (
           <EmptyState title="No leads found" message="Try adjusting your filters or add a new lead" />
         ) : (
@@ -126,7 +94,7 @@ export function LeadsPage() {
         isOpen={showForm}
         onClose={handleFormClose}
         editingLead={editingLead}
-        onSuccess={() => { handleFormClose(); fetchLeads(); }}
+        onSuccess={handleFormSuccess}
       />
 
       <ConfirmDialog
@@ -137,14 +105,14 @@ export function LeadsPage() {
         message={`Are you sure you want to delete ${deleteTarget?.name}? This action cannot be undone.`}
         confirmLabel="Delete"
         variant="danger"
-        loading={deleting}
+        loading={deleteLead.isPending}
       />
 
       <AssignLeadModal
         isOpen={!!assignTarget}
         onClose={() => setAssignTarget(null)}
         lead={assignTarget}
-        onSuccess={() => { setAssignTarget(null); fetchLeads(); }}
+        onSuccess={() => setAssignTarget(null)}
       />
     </div>
   );

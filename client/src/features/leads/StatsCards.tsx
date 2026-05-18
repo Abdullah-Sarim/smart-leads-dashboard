@@ -2,7 +2,7 @@ import { TrendingUp, Users, CheckCircle, XCircle } from 'lucide-react';
 import type { LeadStats } from './leads.types';
 
 interface StatsCardsProps {
-  stats: LeadStats | null;
+  stats: LeadStats | null | undefined;
   loading: boolean;
 }
 

@@ -1,41 +1,26 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { useAuth } from '../../features/auth';
-import { usersApi } from '../../features/auth/auth.api';
-import { User, PaginationMeta } from '../../types';
+import { User } from '../../types';
 import { FullPageLoader, EmptyState, ErrorMessage, Pagination } from '../../components/common';
 import { ConfirmDialog } from '../../components/common';
 import { UsersTable } from './UsersTable';
+import { useUsers, useToggleUserStatus } from '../../lib/queries';
 import toast from 'react-hot-toast';
-import { isApiError } from '../../lib';
 
 export function UsersPage() {
   const { user: currentUser } = useAuth();
-  const [users, setUsers] = useState<User[]>([]);
-  const [meta, setMeta] = useState<PaginationMeta>({ page: 1, limit: 10, total: 0, totalPages: 0, hasNextPage: false, hasPrevPage: false });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [toggling, setToggling] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
   const [confirmTarget, setConfirmTarget] = useState<User | null>(null);
 
-  const fetchUsers = useCallback(async (page = 1) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await usersApi.getAllUsers(page);
-      setUsers(data.users);
-      setMeta(data.meta);
-    } catch (err) {
-      setError(isApiError(err) ? err.message : 'Failed to load users');
-    } finally {
-      setLoading(false);
-    }
+  const { data, isLoading, error, refetch } = useUsers(page);
+  const toggleStatus = useToggleUserStatus();
+
+  const users = data?.users ?? [];
+  const meta = data?.meta ?? { page: 1, limit: 10, total: 0, totalPages: 0, hasNextPage: false, hasPrevPage: false };
+
+  const handlePageChange = useCallback((p: number) => {
+    setPage(p);
   }, []);
-
-  useEffect(() => { fetchUsers(); }, [fetchUsers]);
-
-  const handlePageChange = useCallback((page: number) => {
-    fetchUsers(page);
-  }, [fetchUsers]);
 
   const handleToggle = useCallback((user: User) => {
     setConfirmTarget(user);
@@ -45,20 +30,16 @@ export function UsersPage() {
     if (!confirmTarget) return;
     const newStatus = !confirmTarget.isActive;
     const actionWord = newStatus ? 'activate' : 'deactivate';
-    setToggling(confirmTarget._id);
     try {
-      await usersApi.updateUserStatus(confirmTarget._id, { isActive: newStatus });
+      await toggleStatus.mutateAsync({ userId: confirmTarget._id, payload: { isActive: newStatus } });
       toast.success(`User ${actionWord}d successfully`);
       setConfirmTarget(null);
-      fetchUsers(meta.page);
-    } catch (err) {
-      toast.error(isApiError(err) ? err.message : `Failed to ${actionWord} user`);
-    } finally {
-      setToggling(null);
+    } catch {
+      toast.error(`Failed to ${actionWord} user`);
     }
-  }, [confirmTarget, meta.page, fetchUsers]);
+  }, [confirmTarget, toggleStatus]);
 
-  if (loading && users.length === 0) return <FullPageLoader />;
+  if (isLoading && users.length === 0) return <FullPageLoader />;
 
   return (
     <div className="h-full flex flex-col max-w-7xl mx-auto">
@@ -70,13 +51,18 @@ export function UsersPage() {
       </div>
 
       {error ? (
-        <ErrorMessage message={error} onRetry={() => fetchUsers(meta.page)} />
+        <ErrorMessage message={(error as Error).message} onRetry={refetch} />
       ) : users.length === 0 ? (
         <EmptyState title="No users found" message="There are no registered users yet" />
       ) : (
         <>
           <div className="overflow-y-auto flex-1">
-            <UsersTable users={users} currentUserId={currentUser?._id || ''} toggling={toggling} onToggle={handleToggle} />
+            <UsersTable
+              users={users}
+              currentUserId={currentUser?._id || ''}
+              toggling={toggleStatus.isPending ? confirmTarget?._id ?? null : null}
+              onToggle={handleToggle}
+            />
           </div>
           <div className="mt-4">
             <Pagination page={meta.page} totalPages={meta.totalPages} onPageChange={handlePageChange} />
@@ -94,7 +80,7 @@ export function UsersPage() {
         }`}
         confirmLabel={confirmTarget?.isActive ? 'Deactivate' : 'Activate'}
         variant={confirmTarget?.isActive ? 'danger' : 'primary'}
-        loading={!!toggling}
+        loading={toggleStatus.isPending}
       />
     </div>
   );

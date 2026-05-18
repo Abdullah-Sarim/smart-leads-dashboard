@@ -1,56 +1,26 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { useAuth } from '../../features/auth';
-import { leadsApi, LeadsTable, LeadFilters, LeadQueryParams, Lead, LeadStats, TableSkeleton } from '../../features/leads';
+import { LeadsTable, LeadFilters, LeadQueryParams, Lead, TableSkeleton } from '../../features/leads';
 import { StatsCards } from './StatsCards';
 import { LeadFormModal } from './LeadFormModal';
 import { FullPageLoader, EmptyState, ErrorMessage, Pagination, Button, ConfirmDialog } from '../../components/common';
+import { useLeads, useLeadStats, useDeleteLead } from '../../lib/queries';
 import { Plus } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { isApiError } from '../../lib';
 
 export function DashboardPage() {
   const { user } = useAuth();
-  const [leads, setLeads] = useState<Lead[]>([]);
-  const [stats, setStats] = useState<LeadStats | null>(null);
-  const [statsLoading, setStatsLoading] = useState(false);
-  const [meta, setMeta] = useState({ page: 1, limit: 10, total: 0, totalPages: 0, hasNextPage: false, hasPrevPage: false });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [filters, setFilters] = useState<LeadQueryParams>({ sort: 'latest', page: 1 });
   const [showForm, setShowForm] = useState(false);
   const [editingLead, setEditingLead] = useState<Lead | null>(null);
-  const [exporting, setExporting] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Lead | null>(null);
-  const [deleting, setDeleting] = useState(false);
 
-  const fetchStats = useCallback(async () => {
-    setStatsLoading(true);
-    try {
-      const data = await leadsApi.getStats();
-      setStats(data);
-    } catch {
-      // Stats are non-critical
-    } finally {
-      setStatsLoading(false);
-    }
-  }, []);
+  const { data, isLoading, error, refetch } = useLeads(filters);
+  const { data: stats, isLoading: statsLoading } = useLeadStats();
+  const deleteLead = useDeleteLead();
 
-  const fetchLeads = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await leadsApi.getLeads(filters);
-      setLeads(res.leads);
-      setMeta(res.meta);
-    } catch (err) {
-      setError(isApiError(err) ? err.message : 'Failed to load leads');
-    } finally {
-      setLoading(false);
-    }
-  }, [filters]);
-
-  useEffect(() => { fetchLeads(); }, [fetchLeads]);
-  useEffect(() => { fetchStats(); }, [fetchStats]);
+  const leads = data?.leads ?? [];
+  const meta = data?.meta ?? { page: 1, limit: 10, total: 0, totalPages: 0, hasNextPage: false, hasPrevPage: false };
 
   const handlePageChange = useCallback((page: number) => {
     setFilters((f) => ({ ...f, page }));
@@ -60,18 +30,6 @@ export function DashboardPage() {
     setFilters(newFilters);
   }, []);
 
-  const handleExport = useCallback(async () => {
-    setExporting(true);
-    try {
-      await leadsApi.exportLeadsCsv(filters);
-      toast.success('CSV exported successfully');
-    } catch {
-      toast.error('Export failed');
-    } finally {
-      setExporting(false);
-    }
-  }, [filters]);
-
   const handleEdit = useCallback((lead: Lead) => {
     setEditingLead(lead);
     setShowForm(true);
@@ -79,28 +37,21 @@ export function DashboardPage() {
 
   const handleDeleteConfirm = useCallback(async () => {
     if (!deleteTarget) return;
-    setDeleting(true);
     try {
-      await leadsApi.deleteLead(deleteTarget._id);
+      await deleteLead.mutateAsync(deleteTarget._id);
       toast.success('Lead deleted successfully');
       setDeleteTarget(null);
-      fetchLeads();
-      fetchStats();
-    } catch (err) {
-      toast.error(isApiError(err) ? err.message : 'Delete failed');
-    } finally {
-      setDeleting(false);
+    } catch {
+      toast.error('Delete failed');
     }
-  }, [deleteTarget, fetchLeads, fetchStats]);
+  }, [deleteTarget, deleteLead]);
 
-  const handleFormSuccess = useCallback(() => {
+  const handleFormSuccess = () => {
     setShowForm(false);
     setEditingLead(null);
-    fetchLeads();
-    fetchStats();
-  }, [fetchLeads, fetchStats]);
+  };
 
-  if (loading && leads.length === 0) return <FullPageLoader />;
+  if (isLoading && leads.length === 0) return <FullPageLoader />;
 
   return (
     <div className="h-full flex flex-col max-w-7xl mx-auto">
@@ -117,14 +68,14 @@ export function DashboardPage() {
       <StatsCards stats={stats} loading={statsLoading} />
 
       <div className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-950 pb-3">
-        <LeadFilters filters={filters} onFiltersChange={handleFiltersChange} onExport={handleExport} total={meta.total} />
+        <LeadFilters filters={filters} onFiltersChange={handleFiltersChange} onExport={() => {}} total={meta.total} />
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        {loading && leads.length > 0 ? (
+        {isLoading && leads.length > 0 ? (
           <div className="py-4"><TableSkeleton /></div>
         ) : error ? (
-          <ErrorMessage message={error} onRetry={fetchLeads} />
+          <ErrorMessage message={(error as Error).message} onRetry={refetch} />
         ) : leads.length === 0 ? (
           <EmptyState title="No leads found" message="Try adjusting your filters or add a new lead" />
         ) : (
@@ -150,7 +101,7 @@ export function DashboardPage() {
         message={`Are you sure you want to delete ${deleteTarget?.name}? This action cannot be undone.`}
         confirmLabel="Delete"
         variant="danger"
-        loading={deleting}
+        loading={deleteLead.isPending}
       />
     </div>
   );
