@@ -3,3 +3,4 @@ export { AuthProvider, useAuth } from './AuthContext';
 export { LoginPage } from './LoginPage';
 export { RegisterPage } from './RegisterPage';
 export { UsersPage } from './UsersPage';
+export { AccountPage } from './AccountPage';

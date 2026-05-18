@@ -1,13 +1,14 @@
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Users, LogOut, ChevronLeft, ChevronRight, X, UserCog } from 'lucide-react';
+import { LayoutDashboard, Users, LogOut, ChevronLeft, ChevronRight, X, UserCog, UserCircle } from 'lucide-react';
 import { useAuth } from '../../features/auth';
 import { UserRole } from '../../types';
 import { useState } from 'react';
-import { LogoutConfirmDialog, ThemeToggle } from '../common';
+import { LogoutConfirmDialog, ThemeToggle, UserAvatar } from '../common';
 
 const navItems = [
   { label: 'Dashboard', to: '/', icon: LayoutDashboard },
   { label: 'Leads', to: '/leads', icon: Users },
+  { label: 'Account', to: '/account', icon: UserCircle },
 ];
 
 const adminNavItems = [
@@ -118,9 +119,12 @@ export function Sidebar({ mobileOpen, onMobileClose, collapsed = false, onCollap
 
       <div className="p-3 border-t border-gray-200 dark:border-gray-800">
         {user && (
-          <div className="px-3 py-2 mb-2">
-            <p className={`text-sm font-medium text-gray-900 dark:text-gray-100 truncate ${collapsed ? 'md:hidden' : ''}`}>{user.name}</p>
-            <p className={`text-xs text-gray-500 dark:text-gray-400 capitalize ${collapsed ? 'md:hidden' : ''}`}>{user.role}</p>
+          <div className={`flex items-center gap-3 px-3 py-2 mb-2 ${collapsed ? 'md:justify-center' : ''}`}>
+            <UserAvatar email={user.email} size="sm" />
+            <div className={`min-w-0 ${collapsed ? 'md:hidden' : ''}`}>
+              <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{user.name}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">{user.role}</p>
+            </div>
           </div>
         )}
         <button

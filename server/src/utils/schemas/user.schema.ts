@@ -14,5 +14,13 @@ export const userIdParamSchema = z.object({
   }),
 });
 
+export const updateProfileSchema = z.object({
+  name: z.string().trim().min(2, 'Name must be at least 2 characters').optional(),
+  email: z.string().trim().email('Invalid email address').optional(),
+}).refine((data) => data.name !== undefined || data.email !== undefined, {
+  message: 'At least one field (name or email) is required',
+});
+
 export type UpdateUserStatusInput = z.infer<typeof updateUserStatusSchema>;
+export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
 export type UserIdParam = z.infer<typeof userIdParamSchema>;

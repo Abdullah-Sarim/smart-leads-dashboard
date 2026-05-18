@@ -1,8 +1,10 @@
-import { LogOut, LayoutDashboard, Menu } from 'lucide-react';
+import { LogOut, LayoutDashboard, Menu, UserCircle } from 'lucide-react';
 import { useAuth } from '../../features/auth';
 import { capitalize } from '../../utils/index.js';
 import { LogoutConfirmDialog } from '../common';
+import { UserAvatar } from '../common/UserAvatar';
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 
 interface NavbarProps {
   onMenuClick?: () => void;
@@ -28,9 +30,19 @@ export function Navbar({ onMenuClick }: NavbarProps) {
           <span className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100">Smart Leads</span>
         </div>
         <div className="flex items-center gap-4">
-          <div className="hidden sm:block text-right">
-            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{user?.name}</p>
-            <p className="text-xs text-gray-500 dark:text-gray-400">{user ? capitalize(user.role) : ''}</p>
+          <Link
+            to="/account"
+            className="hidden sm:flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+          >
+            <UserCircle className="w-5 h-5" />
+            Account
+          </Link>
+          <div className="hidden sm:flex items-center gap-2">
+            <UserAvatar email={user?.email || ''} size="sm" />
+            <div className="text-right">
+              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{user?.name}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{user ? capitalize(user.role) : ''}</p>
+            </div>
           </div>
           <button
             onClick={() => setShowLogoutConfirm(true)}

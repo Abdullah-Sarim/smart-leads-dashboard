@@ -10,3 +10,4 @@ export { Pagination } from './Pagination';
 export { ConfirmDialog } from './ConfirmDialog';
 export { ThemeToggle } from './ThemeToggle';
 export { LogoutConfirmDialog } from './LogoutConfirmDialog';
+export { UserAvatar } from './UserAvatar';

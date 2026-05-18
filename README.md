@@ -48,6 +48,9 @@ A full-stack MERN (MongoDB, Express, React, Node.js) application for managing sa
 - [x] Pagination metadata with total page count
 - [x] CSV Export (backend-streamed, filter-aware)
 - [x] Role-Based Access Control (Admin / Sales User)
+- [x] User Account Activation Control (isActive field)
+- [x] Admin User Management (activate/deactivate users)
+- [x] Account Management (view/edit profile, delete own account)
 - [x] Docker Setup with docker-compose
 - [x] Loading, Empty, and Error States
 - [x] Form Validation on client and server
@@ -82,6 +85,9 @@ A full-stack MERN (MongoDB, Express, React, Node.js) application for managing sa
 | View all users                       |  ✓   |     ✗     |
 | Manage users (activate/deactivate)   |  ✓   |     ✗     |
 | User account activation control      |  ✓   |     ✗     |
+| View own profile                     |  ✓   |     ✓     |
+| Edit own profile (name/email)        |  ✓   |     ✓     |
+| Delete own account                   |  ✗   |     ✓     |
 
 ---
 

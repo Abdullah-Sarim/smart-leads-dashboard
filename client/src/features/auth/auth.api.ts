@@ -1,5 +1,5 @@
 import { api } from '../../lib';
-import type { LoginPayload, RegisterPayload, AuthResponse, ApiResponse, User, UserStatusUpdatePayload, UsersResponse, PaginationMeta } from '../../types';
+import type { LoginPayload, RegisterPayload, AuthResponse, ApiResponse, User, UserStatusUpdatePayload, UsersResponse, PaginationMeta, ProfileUpdatePayload } from '../../types';
 
 export const authApi = {
   register: async (payload: RegisterPayload): Promise<AuthResponse> => {
@@ -30,5 +30,19 @@ export const usersApi = {
   updateUserStatus: async (userId: string, payload: UserStatusUpdatePayload): Promise<User> => {
     const res = await api.patch<ApiResponse<User>>(`/users/${userId}/status`, payload);
     return res.data.data;
+  },
+
+  getProfile: async (): Promise<User> => {
+    const res = await api.get<ApiResponse<User>>('/users/profile');
+    return res.data.data;
+  },
+
+  updateProfile: async (payload: ProfileUpdatePayload): Promise<User> => {
+    const res = await api.patch<ApiResponse<User>>('/users/profile', payload);
+    return res.data.data;
+  },
+
+  deleteProfile: async (): Promise<void> => {
+    await api.delete('/users/profile');
   },
 };

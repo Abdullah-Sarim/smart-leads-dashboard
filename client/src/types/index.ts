@@ -17,6 +17,11 @@ export interface UserStatusUpdatePayload {
   isActive: boolean;
 }
 
+export interface ProfileUpdatePayload {
+  name?: string;
+  email?: string;
+}
+
 export interface UsersResponse {
   users: User[];
   meta: PaginationMeta;

@@ -3,7 +3,17 @@ import { ApiResponse } from '../utils/ApiResponse.js';
 import { catchAsync } from '../utils/catchAsync.js';
 import { User } from '../models/index.js';
 import { ApiError } from '../utils/ApiError.js';
-import { IUserWithoutPassword } from '../types/index.js';
+import { IUserWithoutPassword, UserRole } from '../types/index.js';
+
+const sanitizeUser = (user: InstanceType<typeof User>): IUserWithoutPassword => ({
+  _id: user._id.toString(),
+  name: user.name,
+  email: user.email,
+  role: user.role as UserRole,
+  isActive: user.isActive,
+  createdAt: user.createdAt,
+  updatedAt: user.updatedAt,
+});
 
 export const UserController = {
   getAllUsers: catchAsync(async (req: AuthRequest, res) => {
@@ -19,22 +29,65 @@ export const UserController = {
       .skip(skip)
       .limit(limit);
 
-    const sanitizedUsers: IUserWithoutPassword[] = users.map((user) => ({
-      _id: user._id.toString(),
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      isActive: user.isActive,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
-    }));
-
-    ApiResponse.sendSuccess(res, sanitizedUsers, 200, 'Users retrieved successfully', {
+    ApiResponse.sendSuccess(res, users.map(sanitizeUser), 200, 'Users retrieved successfully', {
       total,
       page,
       limit,
       totalPages: Math.ceil(total / limit),
     });
+  }),
+
+  getProfile: catchAsync(async (req: AuthRequest, res) => {
+    const user = await User.findById(req.user!.userId).select('-password');
+    if (!user) {
+      throw ApiError.notFound('User not found');
+    }
+    ApiResponse.sendSuccess(res, sanitizeUser(user));
+  }),
+
+  updateProfile: catchAsync(async (req: AuthRequest, res) => {
+    const { name, email } = req.body;
+    const userId = req.user!.userId;
+
+    if (email) {
+      const existingUser = await User.findOne({ email, _id: { $ne: userId } });
+      if (existingUser) {
+        throw ApiError.conflict('Email already in use by another account');
+      }
+    }
+
+    const updateData: Record<string, string> = {};
+    if (name !== undefined) updateData.name = name;
+    if (email !== undefined) updateData.email = email;
+
+    const user = await User.findByIdAndUpdate(
+      userId,
+      updateData,
+      { new: true, runValidators: true }
+    ).select('-password');
+
+    if (!user) {
+      throw ApiError.notFound('User not found');
+    }
+
+    ApiResponse.sendSuccess(res, sanitizeUser(user), 200, 'Profile updated successfully');
+  }),
+
+  deleteProfile: catchAsync(async (req: AuthRequest, res) => {
+    const userId = req.user!.userId;
+    const currentUser = await User.findById(userId);
+
+    if (!currentUser) {
+      throw ApiError.notFound('User not found');
+    }
+
+    if (currentUser.role === UserRole.Admin) {
+      throw ApiError.forbidden('Admin account cannot be deleted from profile section');
+    }
+
+    await User.findByIdAndUpdate(userId, { isActive: false });
+
+    ApiResponse.sendSuccess(res, null, 200, 'Account deleted successfully');
   }),
 
   updateUserStatus: catchAsync(async (req: AuthRequest, res) => {
@@ -55,17 +108,7 @@ export const UserController = {
       throw ApiError.notFound('User not found');
     }
 
-    const sanitizedUser: IUserWithoutPassword = {
-      _id: user._id.toString(),
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      isActive: user.isActive,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
-    };
-
-    ApiResponse.sendSuccess(res, sanitizedUser, 200, 'User status updated successfully');
+    ApiResponse.sendSuccess(res, sanitizeUser(user), 200, 'User status updated successfully');
   }),
 };
 

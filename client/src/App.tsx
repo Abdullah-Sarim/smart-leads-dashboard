@@ -1,6 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { ProtectedRoute } from './app/ProtectedRoute';
-import { LoginPage, RegisterPage, UsersPage } from './features/auth';
+import { LoginPage, RegisterPage, UsersPage, AccountPage } from './features/auth';
 import { Layout } from './components/layout';
 import { DashboardPage, LeadsPage, LeadDetailPage } from './features/leads';
 
@@ -16,6 +16,7 @@ export default function App() {
           <Route path="leads" element={<LeadsPage />} />
           <Route path="leads/:id" element={<LeadDetailPage />} />
           <Route path="users" element={<UsersPage />} />
+          <Route path="account" element={<AccountPage />} />
         </Route>
       </Route>
       <Route path="*" element={<Navigate to="/login" replace />} />

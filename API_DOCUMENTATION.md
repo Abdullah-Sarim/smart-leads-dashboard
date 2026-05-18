@@ -361,6 +361,147 @@ curl -X PATCH http://localhost:5000/api/users/66f1a2b3c4d5e6f7a8b9c0d2/status \
 
 ---
 
+## Profile Endpoints
+
+All profile endpoints are protected and require authentication.
+
+---
+
+### GET `/api/users/profile`
+
+Get the current user's profile.
+
+**Headers**
+
+```
+Authorization: Bearer <token>
+```
+
+**Example Request**
+
+```bash
+curl http://localhost:5000/api/users/profile \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+```
+
+**Example Response (200 OK)**
+
+```json
+{
+  "success": true,
+  "data": {
+    "_id": "66f1a2b3c4d5e6f7a8b9c0d1",
+    "name": "John Doe",
+    "email": "john@example.com",
+    "role": "sales",
+    "isActive": true,
+    "createdAt": "2025-10-01T09:00:00.000Z",
+    "updatedAt": "2025-10-01T09:00:00.000Z"
+  }
+}
+```
+
+---
+
+### PATCH `/api/users/profile`
+
+Update the current user's profile (name and/or email).
+
+**Headers**
+
+```
+Authorization: Bearer <token>
+```
+
+**Body Parameters**
+
+| Field  | Type   | Required | Description                        |
+|--------|--------|----------|------------------------------------|
+| name   | string | No       | Updated name (min 2 chars)         |
+| email  | string | No       | Updated email (valid format)        |
+
+At least one field is required.
+
+**Example Request**
+
+```bash
+curl -X PATCH http://localhost:5000/api/users/profile \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
+  -d '{ "name": "John Updated" }'
+```
+
+**Example Response (200 OK)**
+
+```json
+{
+  "success": true,
+  "data": {
+    "_id": "66f1a2b3c4d5e6f7a8b9c0d1",
+    "name": "John Updated",
+    "email": "john@example.com",
+    "role": "sales",
+    "isActive": true,
+    "createdAt": "2025-10-01T09:00:00.000Z",
+    "updatedAt": "2025-10-15T11:30:00.000Z"
+  },
+  "message": "Profile updated successfully"
+}
+```
+
+**Error Response (409 Conflict - Email Already Used)**
+
+```json
+{
+  "success": false,
+  "message": "Email already in use by another account"
+}
+```
+
+---
+
+### DELETE `/api/users/profile`
+
+Delete the current user's account (soft delete - sets isActive to false).
+
+**Headers**
+
+```
+Authorization: Bearer <token>
+```
+
+**Rules:**
+- Sales users can delete their own account
+- Admin users cannot delete their own account from profile section
+
+**Example Request**
+
+```bash
+curl -X DELETE http://localhost:5000/api/users/profile \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+```
+
+**Example Response (200 OK)**
+
+```json
+{
+  "success": true,
+  "data": null,
+  "message": "Account deleted successfully"
+}
+```
+
+**Error Response (403 Forbidden - Admin Account)**
+
+```json
+{
+  "success": false,
+  "message": "Admin account cannot be deleted from profile section"
+}
+```
+
+---
+
 ## Lead Endpoints
 
 ### GET `/api/leads`
@@ -737,6 +878,9 @@ GET /api/leads?search=john&status=New&source=Website&sort=latest&page=1&limit=10
 | GET /api/auth/me                |  ✓   |     ✓     |
 | GET /api/users                  |  ✓   |     ✗     |
 | PATCH /api/users/:id/status     |  ✓   |     ✗     |
+| GET /api/users/profile          |  ✓   |     ✓     |
+| PATCH /api/users/profile        |  ✓   |     ✓     |
+| DELETE /api/users/profile       |  ✗   |     ✓     |
 | GET /api/leads                  |  ✓   |     ✓     |
 | GET /api/leads/:id              |  ✓   |     ✓     |
 | POST /api/leads                 |  ✓   |     ✓     |
