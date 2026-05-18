@@ -62,7 +62,16 @@ export function RegisterPage() {
             type="password"
             placeholder="••••••••"
             error={errors.password?.message}
+            showPasswordToggle
             {...register('password')}
+          />
+          <Input
+            label="Confirm Password"
+            type="password"
+            placeholder="••••••••"
+            error={errors.confirmPassword?.message}
+            showPasswordToggle
+            {...register('confirmPassword')}
           />
           {errors.root?.message && (
             <p className="text-sm text-red-500 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-3 py-2 rounded-lg">{errors.root.message}</p>

@@ -1,25 +1,12 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useAuth } from '../../features/auth';
-import { leadsApi, LeadsTable, LeadFilters, LeadQueryParams, Lead, LeadStats, TableSkeleton, LeadStatus, LeadSource } from '../../features/leads';
+import { leadsApi, LeadsTable, LeadFilters, LeadQueryParams, Lead, LeadStats, TableSkeleton } from '../../features/leads';
 import { StatsCards } from './StatsCards';
-import { FullPageLoader, EmptyState, ErrorMessage, Pagination, Button } from '../../components/common';
-import { Modal, ConfirmDialog } from '../../components/common';
-import { Input, Select } from '../../components/common';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { Plus, UserRound, Mail, CircleDot, Megaphone } from 'lucide-react';
-import { isApiError } from '../../lib';
+import { LeadFormModal } from './LeadFormModal';
+import { FullPageLoader, EmptyState, ErrorMessage, Pagination, Button, ConfirmDialog } from '../../components/common';
+import { Plus } from 'lucide-react';
 import toast from 'react-hot-toast';
-
-const leadSchema = z.object({
-  name: z.string().trim().min(2, 'Name must be at least 2 characters'),
-  email: z.string().trim().email('Invalid email'),
-  status: z.nativeEnum(LeadStatus).optional(),
-  source: z.nativeEnum(LeadSource).optional(),
-});
-
-type LeadFormValues = z.infer<typeof leadSchema>;
+import { isApiError } from '../../lib';
 
 export function DashboardPage() {
   const { user } = useAuth();
@@ -32,14 +19,9 @@ export function DashboardPage() {
   const [filters, setFilters] = useState<LeadQueryParams>({ sort: 'latest', page: 1 });
   const [showForm, setShowForm] = useState(false);
   const [editingLead, setEditingLead] = useState<Lead | null>(null);
-  const [submitting, setSubmitting] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Lead | null>(null);
   const [deleting, setDeleting] = useState(false);
-
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<LeadFormValues>({
-    resolver: zodResolver(leadSchema),
-  });
 
   const fetchStats = useCallback(async () => {
     setStatsLoading(true);
@@ -47,7 +29,7 @@ export function DashboardPage() {
       const data = await leadsApi.getStats();
       setStats(data);
     } catch {
-      // Stats are non-critical, silently fail
+      // Stats are non-critical
     } finally {
       setStatsLoading(false);
     }
@@ -67,20 +49,15 @@ export function DashboardPage() {
     }
   }, [filters]);
 
-  useEffect(() => {
-    fetchLeads();
-  }, [fetchLeads]);
-
-  useEffect(() => {
-    fetchStats();
-  }, [fetchStats]);
-
-  const handleFiltersChange = useCallback((newFilters: LeadQueryParams) => {
-    setFilters(newFilters);
-  }, []);
+  useEffect(() => { fetchLeads(); }, [fetchLeads]);
+  useEffect(() => { fetchStats(); }, [fetchStats]);
 
   const handlePageChange = useCallback((page: number) => {
     setFilters((f) => ({ ...f, page }));
+  }, []);
+
+  const handleFiltersChange = useCallback((newFilters: LeadQueryParams) => {
+    setFilters(newFilters);
   }, []);
 
   const handleExport = useCallback(async () => {
@@ -97,9 +74,8 @@ export function DashboardPage() {
 
   const handleEdit = useCallback((lead: Lead) => {
     setEditingLead(lead);
-    reset({ name: lead.name, email: lead.email, status: lead.status, source: lead.source });
     setShowForm(true);
-  }, [reset]);
+  }, []);
 
   const handleDeleteConfirm = useCallback(async () => {
     if (!deleteTarget) return;
@@ -117,39 +93,12 @@ export function DashboardPage() {
     }
   }, [deleteTarget, fetchLeads, fetchStats]);
 
-  const onSubmit = async (data: LeadFormValues) => {
-    setSubmitting(true);
-    try {
-      if (editingLead) {
-        await leadsApi.updateLead(editingLead._id, data);
-        toast.success('Lead updated successfully');
-      } else {
-        await leadsApi.createLead(data);
-        toast.success('Lead created successfully');
-      }
-      setShowForm(false);
-      setEditingLead(null);
-      reset();
-      fetchLeads();
-      fetchStats();
-    } catch (err) {
-      toast.error(isApiError(err) ? err.message : 'Operation failed');
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleOpenForm = () => {
-    setEditingLead(null);
-    reset({ name: '', email: '', status: LeadStatus.New, source: LeadSource.Website });
-    setShowForm(true);
-  };
-
-  const handleCloseForm = () => {
+  const handleFormSuccess = useCallback(() => {
     setShowForm(false);
     setEditingLead(null);
-    reset();
-  };
+    fetchLeads();
+    fetchStats();
+  }, [fetchLeads, fetchStats]);
 
   if (loading && leads.length === 0) return <FullPageLoader />;
 
@@ -160,7 +109,7 @@ export function DashboardPage() {
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Leads</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400">Manage and track your sales leads</p>
         </div>
-        <Button onClick={handleOpenForm} loading={submitting} className="w-full sm:w-auto">
+        <Button onClick={() => { setEditingLead(null); setShowForm(true); }} className="w-full sm:w-auto">
           <Plus className="w-4 h-4" /> Add Lead
         </Button>
       </div>
@@ -186,66 +135,12 @@ export function DashboardPage() {
         )}
       </div>
 
-      <Modal
+      <LeadFormModal
         isOpen={showForm}
-        onClose={handleCloseForm}
-        title={editingLead ? 'Edit Lead' : 'Add New Lead'}
-        footer={
-          <>
-            <Button variant="secondary" onClick={handleCloseForm} disabled={submitting}>Cancel</Button>
-            <Button onClick={handleSubmit(onSubmit)} loading={submitting}>{editingLead ? 'Update' : 'Create'}</Button>
-          </>
-        }
-      >
-        <form className="space-y-5">
-          <div className="rounded-2xl border border-indigo-100 bg-indigo-50/70 p-4 text-sm text-indigo-700 dark:border-indigo-900/40 dark:bg-indigo-900/20 dark:text-indigo-300">
-            {editingLead
-              ? 'Update the lead information and keep the pipeline current.'
-              : 'Add a new lead with the details your team needs to follow up quickly.'}
-          </div>
-
-          <div className="grid gap-4">
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-                <UserRound className="h-4 w-4 text-indigo-500" />
-                Contact
-              </div>
-              <div className="grid gap-3">
-                <Input label="Name" placeholder="e.g. Rahul Sharma" {...register('name')} error={errors.name?.message} />
-                <Input label="Email" type="email" placeholder="rahul@example.com" {...register('email')} error={errors.email?.message} />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-                <CircleDot className="h-4 w-4 text-indigo-500" />
-                Lead details
-              </div>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <Select
-                  label="Status"
-                  options={[
-                    { value: 'New', label: 'New' },
-                    { value: 'Contacted', label: 'Contacted' },
-                    { value: 'Qualified', label: 'Qualified' },
-                    { value: 'Lost', label: 'Lost' },
-                  ]}
-                  {...register('status')}
-                />
-                <Select
-                  label="Source"
-                  options={[
-                    { value: 'Website', label: 'Website' },
-                    { value: 'Instagram', label: 'Instagram' },
-                    { value: 'Referral', label: 'Referral' },
-                  ]}
-                  {...register('source')}
-                />
-              </div>
-            </div>
-          </div>
-        </form>
-      </Modal>
+        onClose={() => { setShowForm(false); setEditingLead(null); }}
+        editingLead={editingLead}
+        onSuccess={handleFormSuccess}
+      />
 
       <ConfirmDialog
         isOpen={!!deleteTarget}

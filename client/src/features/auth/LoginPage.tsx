@@ -57,6 +57,7 @@ export function LoginPage() {
             type="password"
             placeholder="••••••••"
             error={errors.password?.message}
+            showPasswordToggle
             {...register('password')}
           />
           {errors.root?.message && (

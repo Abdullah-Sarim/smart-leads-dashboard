@@ -30,6 +30,7 @@ export function Sidebar({ mobileOpen, onMobileClose, collapsed = false, onCollap
 
   const isActive = (to: string) => {
     if (to === '/') return location.pathname === '/';
+    if (to === '/leads') return location.pathname === '/leads';
     return location.pathname.startsWith(to);
   };
 

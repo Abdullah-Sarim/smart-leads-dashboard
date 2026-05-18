@@ -1,6 +1,8 @@
 export { leadsApi } from './leads.api';
 export { LeadsTable } from './LeadsTable';
 export { LeadFilters } from './LeadFilters';
+export { LeadFormModal } from './LeadFormModal';
+export { AssignLeadModal } from './AssignLeadModal';
 export { DashboardPage } from './DashboardPage';
 export { LeadsPage } from './LeadsPage';
 export { LeadDetailPage } from './LeadDetailPage';
