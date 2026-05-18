@@ -29,22 +29,30 @@ export function LeadFilters({ filters, onFiltersChange, onExport, total }: LeadF
     setSearch(e.target.value);
   };
 
+  const hasActiveFilters = Boolean(filters.status || filters.source || filters.search || (filters.sort && filters.sort !== 'latest'));
+
+  const handleClearFilters = () => {
+    setSearch('');
+    onFiltersChange({ sort: 'latest', page: 1 });
+  };
+
   return (
-    <div className="bg-white rounded-xl border border-gray-100 p-4 flex flex-wrap gap-3 items-end">
-      <div className="flex-1 min-w-[200px]">
+    <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-4 flex flex-col lg:flex-row lg:flex-wrap gap-3 lg:items-end">
+      <div className="flex-1 min-w-0">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input
             type="text"
+            aria-label="Search leads by name or email"
             placeholder="Search by name or email..."
             value={search}
             onChange={handleSearchChange}
-            className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500 dark:focus:ring-indigo-400"
           />
         </div>
       </div>
 
-      <div className="w-36">
+      <div className="w-full sm:w-36">
         <Select
           value={filters.status || ''}
           onChange={(e) => handleChange('status', e.target.value)}
@@ -55,7 +63,7 @@ export function LeadFilters({ filters, onFiltersChange, onExport, total }: LeadF
         />
       </div>
 
-      <div className="w-36">
+      <div className="w-full sm:w-36">
         <Select
           value={filters.source || ''}
           onChange={(e) => handleChange('source', e.target.value)}
@@ -66,7 +74,7 @@ export function LeadFilters({ filters, onFiltersChange, onExport, total }: LeadF
         />
       </div>
 
-      <div className="w-32">
+      <div className="w-full sm:w-32">
         <Select
           value={filters.sort || 'latest'}
           onChange={(e) => handleChange('sort', e.target.value)}
@@ -77,11 +85,17 @@ export function LeadFilters({ filters, onFiltersChange, onExport, total }: LeadF
         />
       </div>
 
-      <Button variant="secondary" onClick={onExport} title="Export CSV">
+      {hasActiveFilters && (
+        <Button variant="ghost" onClick={handleClearFilters} className="w-full sm:w-auto">
+          Clear
+        </Button>
+      )}
+
+      <Button variant="secondary" onClick={onExport} title="Export CSV" aria-label="Export leads as CSV" className="w-full sm:w-auto">
         <Download className="w-4 h-4" />
       </Button>
 
-      <div className="text-sm text-gray-500">{total} leads</div>
+      <div className="text-sm text-gray-500 dark:text-gray-400 lg:ml-auto">{total} leads</div>
     </div>
   );
 }

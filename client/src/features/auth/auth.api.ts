@@ -1,4 +1,4 @@
-import { api } from '../lib';
+import { api } from '../../lib';
 import type { LoginPayload, RegisterPayload, AuthResponse, ApiResponse, User } from '../../types';
 
 export const authApi = {
@@ -15,5 +15,14 @@ export const authApi = {
   getCurrentUser: async (): Promise<User> => {
     const res = await api.get<ApiResponse<User>>('/auth/me');
     return res.data.data;
+  },
+
+  getAllUsers: async (): Promise<User[]> => {
+    const res = await api.get<ApiResponse<User[]>>('/auth/users');
+    return res.data.data;
+  },
+
+  deleteUser: async (userId: string): Promise<void> => {
+    await api.delete(`/auth/users/${userId}`);
   },
 };

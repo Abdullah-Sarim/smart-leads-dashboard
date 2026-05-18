@@ -12,6 +12,10 @@ declare global {
   }
 }
 
+export interface AuthRequest extends Request {
+  user?: AuthPayload;
+}
+
 export const authenticate = (
   req: Request,
   _res: Response,
@@ -52,6 +56,8 @@ export const authorizeRoles = (...allowedRoles: UserRole[]) => {
     next();
   };
 };
+
+export const authorize = authorizeRoles;
 
 // Example usage:
 // router.get('/admin-only', authenticate, authorizeRoles(UserRole.Admin), handler);

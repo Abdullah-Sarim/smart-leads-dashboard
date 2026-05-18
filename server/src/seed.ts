@@ -1,8 +1,8 @@
 import bcrypt from 'bcryptjs';
 import mongoose from 'mongoose';
-import { User } from '../models/user.model.js';
-import { Lead } from '../models/lead.model.js';
-import { UserRole, LeadStatus, LeadSource } from '../types/index.js';
+import { User } from './models/user.model.js';
+import { Lead } from './models/lead.model.js';
+import { UserRole, LeadStatus, LeadSource } from './types/index.js';
 import dotenv from 'dotenv';
 
 dotenv.config();

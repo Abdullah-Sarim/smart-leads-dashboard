@@ -6,8 +6,8 @@ import { catchAsync } from '../utils/catchAsync.js';
 
 export const AuthController = {
   register: catchAsync(async (req: AuthRequest, res) => {
-    const { name, email, password, role } = req.body;
-    const result = await authService.register(name, email, password, role);
+    const { name, email, password } = req.body;
+    const result = await authService.register(name, email, password);
     ApiResponse.sendSuccess(res, result, 201, 'Registration successful');
   }),
 
@@ -35,6 +35,12 @@ export const AuthController = {
   getAllUsers: catchAsync(async (_req: AuthRequest, res) => {
     const users = await authService.getAllUsers();
     ApiResponse.sendSuccess(res, users);
+  }),
+
+  deleteUser: catchAsync(async (req: AuthRequest, res) => {
+    const { id } = req.params;
+    await authService.deleteUser(id, req.user!.userId);
+    ApiResponse.sendSuccess(res, null, 200, 'User deleted successfully');
   }),
 };
 

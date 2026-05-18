@@ -15,12 +15,12 @@ export function Button({
   className = '',
   ...props
 }: ButtonProps) {
-  const base = 'inline-flex items-center justify-center font-medium rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed gap-2';
+  const base = 'inline-flex items-center justify-center font-medium rounded-lg transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed gap-2 dark:focus-visible:ring-offset-gray-950';
   const variants = {
     primary: 'bg-indigo-600 text-white hover:bg-indigo-700 active:bg-indigo-800',
-    secondary: 'bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300',
+    secondary: 'bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 dark:active:bg-gray-600',
     danger: 'bg-red-600 text-white hover:bg-red-700 active:bg-red-800',
-    ghost: 'text-gray-600 hover:bg-gray-100 active:bg-gray-200',
+    ghost: 'text-gray-600 hover:bg-gray-100 active:bg-gray-200 dark:text-gray-400 dark:hover:bg-gray-800 dark:active:bg-gray-700',
   };
   const sizes = {
     sm: 'px-3 py-1.5 text-sm',

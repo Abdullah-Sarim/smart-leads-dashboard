@@ -1,2 +1,2 @@
-export { authController, authValidation } from './auth.controller.js';
-export { leadController, leadValidation } from './lead.controller.js';
+export { authController } from './auth.controller.js';
+export { leadController } from './lead.controller.js';

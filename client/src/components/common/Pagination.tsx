@@ -10,7 +10,7 @@ export function Pagination({ page, totalPages, onPageChange }: PaginationProps) 
   if (totalPages <= 1) return null;
 
   return (
-    <div className="flex items-center justify-center gap-1 mt-6">
+    <div className="flex flex-wrap items-center justify-center gap-1 mt-6">
       <button
         onClick={() => onPageChange(page - 1)}
         disabled={page === 1}
@@ -23,7 +23,7 @@ export function Pagination({ page, totalPages, onPageChange }: PaginationProps) 
         <button
           key={p}
           onClick={() => onPageChange(p)}
-          className={`w-10 h-10 rounded-lg font-medium text-sm transition-colors ${
+          className={`w-9 h-9 sm:w-10 sm:h-10 rounded-lg font-medium text-sm transition-colors ${
             p === page ? 'bg-indigo-600 text-white' : 'text-gray-600 hover:bg-gray-100'
           }`}
         >

@@ -1,111 +1,253 @@
 # Smart Leads Dashboard
 
-A production-quality full-stack MERN application for managing sales leads with role-based access control.
+A full-stack MERN (MongoDB, Express, React, Node.js) application for managing sales leads with role-based access control, built as a full-stack web development internship assignment.
 
-## Tech Stack
+---
 
-| Layer | Technology |
-|-------|------------|
-| Frontend | React 18, TypeScript, TailwindCSS, Vite |
-| Backend | Node.js, Express.js, TypeScript |
-| Database | MongoDB, Mongoose ODM |
-| Auth | JWT, bcrypt, express-validator |
-| State | Zustand (client), Redis-ready middleware |
+## Table of Contents
+
+1. [Project Overview](#project-overview)
+2. [Features](#features)
+3. [Tech Stack](#tech-stack)
+4. [Role Permissions](#role-permissions)
+5. [Project Structure](#project-structure)
+6. [Setup Instructions](#setup-instructions)
+   - [Backend Setup](#backend-setup)
+   - [Frontend Setup](#frontend-setup)
+   - [Docker Setup](#docker-setup)
+7. [Environment Variables](#environment-variables)
+8. [Test Credentials](#test-credentials)
+9. [API Documentation](#api-documentation)
+10. [Deployment](#deployment)
+11. [Screenshots](#screenshots)
+12. [Author](#author)
+
+---
+
+## Project Overview
+
+**Smart Leads Dashboard** is a full-stack web application that enables sales teams to manage leads effectively. It supports user authentication, lead CRUD operations, filtering, search, pagination, CSV export, and role-based access control for Admin and Sales User roles.
+
+---
 
 ## Features
 
 - [x] JWT Authentication
-- [x] User Registration & Login
-- [x] Password Hashing (bcrypt)
-- [x] Protected Routes
-- [x] Auth Middleware
-- [x] Lead CRUD
+- [x] User Registration & Login with form validation (Zod)
+- [x] Password Hashing with bcrypt
+- [x] Protected Routes with auth middleware
+- [x] Lead CRUD (Create, Read, Update, Delete)
 - [x] Lead Fields: name, email, status, source, createdAt
 - [x] Status values: New, Contacted, Qualified, Lost
 - [x] Source values: Website, Instagram, Referral
-- [x] Advanced Filtering (status + source)
-- [x] Search by name/email
-- [x] Sort by latest/oldest
-- [x] Combined Filters
-- [x] Backend Pagination (10/page)
-- [x] Pagination metadata
-- [x] Debounced Search
-- [x] CSV Export
+- [x] Advanced Filtering by status and source
+- [x] Real-time Search by name or email (debounced 500ms)
+- [x] Sort by latest or oldest creation date
+- [x] Combined Filters (search + status + source + sort)
+- [x] Backend Pagination (10 leads per page)
+- [x] Pagination metadata with total page count
+- [x] CSV Export (backend-streamed, filter-aware)
 - [x] Role-Based Access Control (Admin / Sales User)
-- [x] Docker Setup
-- [x] .env.example
-- [x] Loading / Empty / Error States
-- [x] Form Validation
+- [x] Docker Setup with docker-compose
+- [x] Loading, Empty, and Error States
+- [x] Form Validation on client and server
+- [x] Dark Mode support
+
+---
+
+## Tech Stack
+
+| Layer      | Technology                                               |
+|------------|----------------------------------------------------------|
+| Frontend   | React 18, TypeScript, TailwindCSS, Vite                 |
+| Backend    | Node.js, Express.js, TypeScript                          |
+| Database   | MongoDB 7, Mongoose ODM                                 |
+| Auth       | JWT (jsonwebtoken), bcryptjs                              |
+| Validation | Zod (client and server)                                  |
+| State Mgmt | React Context (auth), local component state               |
+| HTTP       | Axios                                                     |
+
+---
+
+## Role Permissions
+
+| Feature                         | Admin | Sales User |
+|---------------------------------|:-----:|:----------:|
+| View all leads                  |  ✓   |     ✓     |
+| View individual lead            |  ✓   |     ✓     |
+| Create lead                     |  ✓   |     ✓     |
+| Update lead                     |  ✓   |     ✓     |
+| Delete lead                     |  ✓   |     ✗     |
+| Export leads to CSV             |  ✓   |     ✓     |
+| View all users                  |  ✓   |     ✗     |
+| Manage users (register/delete)  |  ✓   |     ✗     |
+
+---
 
 ## Project Structure
 
 ```
 LeadDashboard/
-├── client/                     # React frontend
+├── client/                          # React frontend (Vite + TypeScript)
 │   ├── src/
-│   │   ├── components/          # Reusable UI components
-│   │   │   ├── common/        # Button, Input, Select, StatusViews
-│   │   │   ├── layout/        # Navbar, Layout
-│   │   │   └── leads/         # LeadForm, LeadsTable, FilterBar, Pagination
-│   │   ├── hooks/             # Custom hooks (useDebounce, useAuth)
-│   │   ├── pages/             # Route pages (Login, Register, Dashboard, Landing)
-│   │   ├── services/          # API services (api, auth, leads)
-│   │   ├── store/             # Zustand state (auth store)
-│   │   ├── types/             # TypeScript types & enums
-│   │   └── utils/             # Validation schemas, helpers
-│   └── public/
-├── server/                     # Node/Express backend
+│   │   ├── components/
+│   │   │   ├── common/              # Button, Input, Select, Badge, Modal
+│   │   │   ├── layout/              # Navbar, Layout
+│   │   │   └── leads/               # StatsCards, LeadsTable, LeadFilters,
+│   │   │                             # LeadForm, Pagination, TableSkeleton
+│   │   ├── features/
+│   │   │   ├── auth/                # LoginPage, RegisterPage, AuthContext
+│   │   │   └── leads/               # Dashboard, LeadDetail, LeadsPage,
+│   │   │                             # leads.types, leads.service
+│   │   ├── hooks/                   # useDebounce, useAuth
+│   │   ├── lib/                     # axios instance, error helpers
+│   │   ├── pages/                   # Route pages
+│   │   ├── services/                # API services (auth, leads)
+│   │   ├── store/                   # Zustand auth store
+│   │   ├── types/                   # TypeScript types
+│   │   └── utils/                   # Validation schemas, helpers
+│   ├── .env.example
+│   └── package.json
+│
+├── server/                          # Node/Express backend
 │   ├── src/
-│   │   ├── config/            # Database, app config
-│   │   ├── controllers/       # Request handlers
-│   │   ├── middleware/        # Auth, validation middleware
-│   │   ├── models/            # Mongoose schemas (User, Lead)
-│   │   ├── routes/            # Express routers
-│   │   ├── services/          # Business logic
-│   │   ├── types/             # Shared TypeScript types
-│   │   ├── utils/             # Response helpers
-│   │   └── index.ts           # App entry point
-│   └── .env.example
-├── docker-compose.yml
-├── Dockerfile
-└── package.json
+│   │   ├── config/                  # Database configuration
+│   │   ├── controllers/             # Request handlers (auth, leads, user)
+│   │   ├── middleware/               # Auth, validation, error middleware
+│   │   ├── models/                   # Mongoose schemas (User, Lead)
+│   │   ├── routes/                  # Express routers
+│   │   ├── services/                # Business logic (auth, leads)
+│   │   ├── types/                   # Shared TypeScript types
+│   │   ├── utils/                   # Response helpers
+│   │   ├── seed.ts                  # Database seeder (demo data)
+│   │   └── index.ts                 # App entry point
+│   ├── .env.example
+│   └── package.json
+│
+├── docker-compose.yml               # Docker orchestration
+├── Dockerfile                      # Multi-stage Docker build
+└── package.json                    # Root scripts (concurrently)
 ```
+
+---
+
+## Setup Instructions
+
+### Prerequisites
+
+- [Node.js 20+](https://nodejs.org/)
+- [MongoDB 7+](https://www.mongodb.com/) (local or Atlas)
+- [Docker & Docker Compose](https://www.docker.com/) (optional)
+
+---
+
+### Backend Setup
+
+```bash
+# Navigate to server directory
+cd server
+
+# Install dependencies
+npm install
+
+# Copy environment variables
+cp .env.example .env
+
+# Update .env with your MongoDB URI and JWT_SECRET
+
+# Seed demo data (creates test users and leads)
+npm run seed
+
+# Start development server
+npm run dev
+```
+
+Server runs at **http://localhost:5000**
+
+---
+
+### Frontend Setup
+
+```bash
+# Open a new terminal
+
+# Navigate to client directory
+cd client
+
+# Install dependencies
+npm install
+
+# Copy environment variables
+cp .env.example .env
+
+# Start development server
+npm run dev
+```
+
+Client runs at **http://localhost:5173**
+
+---
+
+### Docker Setup
+
+```bash
+# From the project root directory
+
+# Build and start all services (MongoDB + Backend + Frontend)
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Stop services
+docker-compose down
+
+# Stop and remove volumes (clean slate)
+docker-compose down -v
+```
+
+After Docker setup, the app is accessible at **http://localhost:3000**
+
+---
+
+## Environment Variables
+
+### Server (`server/.env`)
+
+| Variable        | Description                         | Default                              |
+|-----------------|-------------------------------------|--------------------------------------|
+| `NODE_ENV`      | Environment mode                    | `development`                        |
+| `PORT`          | Server port                         | `5000`                               |
+| `MONGO_URI`     | MongoDB connection string           | `mongodb://localhost:27017/leaddashboard` |
+| `JWT_SECRET`    | JWT signing secret (change this!)   | `your-super-secret-jwt-key-change-in-production` |
+| `JWT_EXPIRES_IN`| Token expiry duration               | `7d`                                 |
+
+### Client (`client/.env`)
+
+| Variable        | Description                | Default                    |
+|-----------------|---------------------------|----------------------------|
+| `VITE_API_URL`  | Optional API base URL for custom deployments | `/api` |
+
+---
+
+## Test Credentials
+
+After running the database seeder (`npm run seed` in the server directory), the following demo accounts are available:
+
+| Role       | Email             | Password   | Permissions              |
+|------------|-------------------|------------|--------------------------|
+| **Admin**  | admin@demo.com    | admin123   | Full access + user mgmt  |
+| **Sales**  | sales@demo.com    | sales123   | Lead CRUD + export only  |
+
+---
 
 ## API Documentation
 
-### Base URL
-```
-http://localhost:5000/api
-```
+The API follows RESTful conventions with a consistent JSON response format.
 
-### Authentication
+**Base URL:** `http://localhost:5000/api`
 
-| Method | Endpoint | Description | Auth |
-|--------|----------|-------------|------|
-| POST | /auth/register | Register new user | No |
-| POST | /auth/login | Login user | No |
-| GET | /auth/profile | Get current user | Yes |
-| GET | /auth/users | Get all users | Admin |
-
-### Leads
-
-| Method | Endpoint | Description | Auth |
-|--------|----------|-------------|------|
-| GET | /leads | Get paginated leads | Yes |
-| POST | /leads | Create lead | Yes |
-| GET | /leads/:id | Get single lead | Yes |
-| PUT | /leads/:id | Update lead | Yes |
-| DELETE | /leads/:id | Delete lead | Yes |
-| GET | /leads/export | Export CSV | Yes |
-
-### Query Parameters
-
-```
-?page=1&limit=10&search=john&status=New&source=Website&sortBy=createdAt&order=desc
-```
-
-### Response Format
-
+**Standard Response Format:**
 ```json
 {
   "success": true,
@@ -119,98 +261,89 @@ http://localhost:5000/api
 }
 ```
 
-## Setup
+**Authentication Endpoints:**
 
-### Prerequisites
-- Node.js 20+
-- MongoDB 7+
-- Docker (optional)
+| Method | Endpoint         | Description                  | Auth Required |
+|--------|------------------|------------------------------|---------------|
+| POST   | `/auth/register` | Register new user            | No            |
+| POST   | `/auth/login`    | Login and get JWT token      | No            |
+| GET    | `/auth/me`       | Get current user profile     | Yes           |
+| GET    | `/auth/users`    | Get all users (list)         | Admin         |
 
-### Installation
+**Lead Endpoints:**
 
-```bash
-# Clone the repo
-cd LeadDashboard
+| Method | Endpoint          | Description                   | Auth Required |
+|--------|-------------------|-------------------------------|---------------|
+| GET    | `/leads`           | Get paginated leads (filterable) | Yes         |
+| POST   | `/leads`           | Create new lead               | Yes           |
+| GET    | `/leads/:id`       | Get single lead by ID          | Yes           |
+| PUT    | `/leads/:id`       | Update lead                    | Yes           |
+| DELETE | `/leads/:id`       | Delete lead                    | Admin         |
+| GET    | `/leads/export/csv`| Export leads as CSV            | Yes           |
 
-# Install all dependencies
-npm run install:all
+**Query Parameters for `/leads`:**
 
-# Create .env files
-cp server/.env.example server/.env
-cp client/.env.example client/.env
+| Parameter  | Values                              | Description              |
+|------------|-------------------------------------|--------------------------|
+| `page`     | `1`, `2`, `3`...                    | Page number              |
+| `limit`    | `10`, `20`, `50`                    | Items per page           |
+| `search`   | `john`, `email`...                  | Search by name or email  |
+| `status`   | `New`, `Contacted`, `Qualified`, `Lost` | Filter by status     |
+| `source`   | `Website`, `Instagram`, `Referral` | Filter by source         |
+| `sort`     | `latest`, `oldest`                 | Sort by creation date    |
 
-# Start MongoDB locally, then:
-npm run dev
+---
+
+## Deployment
+
+> **Note:** Deployment configuration will be added here once the app is deployed to a hosting platform.
+
+**Planned Deployment Targets:**
+- Frontend: Vercel / Netlify
+- Backend: Render / Railway
+- Database: MongoDB Atlas (cloud)
+
+**Steps to Deploy:**
+
+1. Set `NODE_ENV=production` in server environment
+2. Configure the frontend API base URL only if your deployment does not use the default `/api` proxy path
+3. Update CORS whitelist in server to include deployed frontend URL
+4. Configure environment variables in hosting platform dashboard
+5. Push to repository and connect CI/CD pipeline
+
+---
+
+## Screenshots
+
+> **Note:** Add screenshots here after deploying the application.
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                                                         │
+│   [Login Page]                                          │
+│   [Dashboard - Leads Table]                             │
+│   [Lead Form / Modal]                                   │
+│   [Export Preview]                                      │
+│                                                         │
+└─────────────────────────────────────────────────────────┘
 ```
 
-### Docker
+*To add screenshots:*
+1. Run the app locally (`npm run dev`)
+2. Take screenshots of each key page
+3. Place images in `/docs/screenshots/` directory
+4. Reference them here with relative paths
 
-```bash
-docker-compose up -d
-```
+---
 
-App runs at http://localhost:3000
+## Author
 
-### Manual Dev
+**Name:** Md Sarim Abdullah
+**Email:** abdullah1sarim1100@gmail.com
+**GitHub:** 
+**LinkedIn:** 
+**Portfolio:** https://abdullahsarim.vercel.app
 
-```bash
-# Terminal 1
-cd server && npm run dev
+---
 
-# Terminal 2
-cd client && npm run dev
-```
-
-Server: http://localhost:5000
-Client: http://localhost:5173
-
-## Environment Variables
-
-### Server (.env)
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| NODE_ENV | Environment | development |
-| PORT | Server port | 5000 |
-| MONGODB_URI | MongoDB connection string | mongodb://localhost:27017/leaddashboard |
-| JWT_SECRET | JWT signing secret | - |
-| JWT_EXPIRES_IN | Token expiry | 7d |
-| BCRYPT_SALT | Password hashing rounds | 12 |
-
-### Client (.env)
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| VITE_API_URL | Backend API URL | http://localhost:5000/api |
-
-## Demo Credentials
-
-After seeding data, use:
-
-- **Admin:** admin@demo.com / admin123
-- **Sales User:** sales@demo.com / sales123
-
-## Available Scripts
-
-| Script | Description |
-|--------|-------------|
-| `npm run dev` | Run both server & client concurrently |
-| `npm run dev:server` | Run backend only |
-| `npm run dev:client` | Run frontend only |
-| `npm run build` | Build both for production |
-| `npm run install:all` | Install all dependencies |
-
-## Design Decisions
-
-1. **Monorepo structure** — Clean separation, shared types between server/client
-2. **Service layer** — Business logic isolated from controllers for testability
-3. **Zustand for state** — Minimal, TypeScript-friendly state management without boilerplate
-4. **Debounced search** — 500ms delay to prevent API spam while typing
-5. **Pagination on backend** — Scalable; client just displays metadata
-6. **CSV export from backend** — Streams file, respects filters; no frontend memory issues
-7. **RBAC via middleware** — Middleware checks role before controller logic runs
-8. **express-validator** — Schema-based validation with consistent error format
-
-## License
-
-MIT
+*This project was built as a full-stack web development internship assignment.*

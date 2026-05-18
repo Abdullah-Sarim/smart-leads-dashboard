@@ -3,7 +3,6 @@ import type {
   Lead,
   LeadFormValues,
   LeadQueryParams,
-  LeadsResponse,
   ApiResponse,
   PaginationMeta,
   LeadStats,

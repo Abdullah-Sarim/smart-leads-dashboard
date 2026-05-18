@@ -1,5 +1,19 @@
 import { Response } from 'express';
-import { ApiResponse, PaginationMeta } from '../types/index.js';
+
+interface PaginationMeta {
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+interface ApiResponse<T> {
+  success: boolean;
+  data: T | null;
+  message?: string;
+  errors?: unknown[];
+  meta?: PaginationMeta;
+}
 
 export const sendSuccess = <T>(
   res: Response,
@@ -11,8 +25,8 @@ export const sendSuccess = <T>(
   const response: ApiResponse<T> = {
     success: true,
     data,
-    ...(meta && { meta }),
-    ...(message && { message }),
+    message,
+    meta,
   };
   res.status(statusCode).json(response);
 };
@@ -23,10 +37,11 @@ export const sendError = (
   message: string,
   errors?: unknown
 ): void => {
-  res.status(statusCode).json({
+  const payload: Record<string, unknown> = {
     success: false,
     data: null,
     message,
-    ...(errors && { errors }),
-  });
+  };
+  if (errors) payload.errors = errors as unknown[];
+  res.status(statusCode).json(payload);
 };

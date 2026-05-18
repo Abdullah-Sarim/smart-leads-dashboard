@@ -11,5 +11,6 @@ router.post('/register', validate(registerSchema), authController.register);
 router.post('/login', validate(loginSchema), authController.login);
 router.get('/me', authenticate, authController.getProfile);
 router.get('/users', authenticate, authorize(UserRole.Admin), authController.getAllUsers);
+router.delete('/users/:id', authenticate, authorize(UserRole.Admin), authController.deleteUser);
 
 export default router;

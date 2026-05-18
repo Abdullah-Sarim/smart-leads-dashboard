@@ -13,18 +13,19 @@ export const LeadController = {
   }),
 
   getAll: catchAsync(async (req: AuthRequest, res) => {
-    const { status, source, search, sort, page } = req.query as {
+    const { status, source, search, sort, page, limit } = req.query as {
       status?: LeadStatus;
       source?: LeadSource;
       search?: string;
       sort?: 'latest' | 'oldest';
       page?: number;
+      limit?: number;
     };
 
     const result = await leadService.getLeads(
       { status, source, search },
       page || 1,
-      10,
+      limit || 10,
       sort || 'latest'
     );
 

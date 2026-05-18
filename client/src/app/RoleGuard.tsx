@@ -1,5 +1,5 @@
-import { useAuth } from '../../features/auth';
-import type { UserRole } from '../../types';
+import { useAuth } from '../features/auth';
+import type { UserRole } from '../types';
 
 interface RoleGuardProps {
   children: React.ReactNode;

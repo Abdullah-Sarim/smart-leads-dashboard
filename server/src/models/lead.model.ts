@@ -36,10 +36,10 @@ const leadSchema = new Schema<ILeadDocument>(
       default: LeadSource.Website,
     },
     createdBy: {
-      type: Schema.Types.ObjectId,
+      type: 'ObjectId',
       ref: 'User',
       required: true,
-    },
+    } as Record<string, unknown>,
   },
   {
     timestamps: true,

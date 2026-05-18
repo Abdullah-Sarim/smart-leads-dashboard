@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import { User, IUserDocument } from '../models/index.js';
 import { config } from '../config/index.js';
 import { IUserWithoutPassword, UserRole, AuthPayload } from '../types/index.js';
+import { ApiError } from '../utils/ApiError.js';
 
 export interface AuthResponse {
   user: IUserWithoutPassword;
@@ -13,12 +14,11 @@ export class AuthService {
   async register(
     name: string,
     email: string,
-    password: string,
-    role?: UserRole
+    password: string
   ): Promise<AuthResponse> {
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      throw new Error('Email already registered');
+      throw ApiError.conflict('Email already registered');
     }
 
     const hashedPassword = await bcrypt.hash(password, config.bcrypt.salt);
@@ -26,7 +26,7 @@ export class AuthService {
       name,
       email,
       password: hashedPassword,
-      role: role || UserRole.Sales,
+      role: UserRole.Sales,
     });
 
     const token = this.generateToken(user);
@@ -36,12 +36,12 @@ export class AuthService {
   async login(email: string, password: string): Promise<AuthResponse> {
     const user = await User.findOne({ email }).select('+password');
     if (!user) {
-      throw new Error('Invalid email or password');
+      throw ApiError.unauthorized('Invalid email or password');
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
-      throw new Error('Invalid email or password');
+      throw ApiError.unauthorized('Invalid email or password');
     }
 
     const token = this.generateToken(user);
@@ -57,6 +57,16 @@ export class AuthService {
     return users.map(this.sanitizeUser);
   }
 
+  async deleteUser(userId: string, currentUserId: string): Promise<void> {
+    if (userId === currentUserId) {
+      throw ApiError.badRequest('You cannot delete yourself');
+    }
+    const user = await User.findByIdAndDelete(userId);
+    if (!user) {
+      throw ApiError.notFound('User not found');
+    }
+  }
+
   private generateToken(user: IUserDocument): string {
     const payload: AuthPayload = {
       userId: user._id.toString(),
@@ -65,8 +75,8 @@ export class AuthService {
     };
 
     return jwt.sign(payload, config.jwt.secret, {
-      expiresIn: config.jwt.expiresIn,
-    });
+      expiresIn: config.jwt.expiresIn as string,
+    } as jwt.SignOptions);
   }
 
   private sanitizeUser(user: IUserDocument): IUserWithoutPassword {

@@ -33,6 +33,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch {
       localStorage.removeItem(TOKEN_KEY);
       localStorage.removeItem(USER_KEY);
+      setUser(null);
     } finally {
       setIsLoading(false);
     }
@@ -47,7 +48,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(TOKEN_KEY, res.token);
     localStorage.setItem(USER_KEY, JSON.stringify(res.user));
     setUser(res.user);
-    toast.success(`Welcome back, ${res.user.name}!`);
+    try { toast.success(`Welcome back, ${res.user.name}!`); } catch { /* toast failed */ }
   }, []);
 
   const register = useCallback(async (payload: RegisterPayload) => {
@@ -55,14 +56,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(TOKEN_KEY, res.token);
     localStorage.setItem(USER_KEY, JSON.stringify(res.user));
     setUser(res.user);
-    toast.success(`Account created! Welcome, ${res.user.name}!`);
+    try { toast.success(`Account created! Welcome, ${res.user.name}!`); } catch { /* toast failed */ }
   }, []);
 
   const logout = useCallback(() => {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
     setUser(null);
-    toast.success('Logged out successfully');
+    try { toast.success('Logged out successfully'); } catch { /* toast failed */ }
   }, []);
 
   return (

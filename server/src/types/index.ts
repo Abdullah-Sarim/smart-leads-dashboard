@@ -38,3 +38,24 @@ export type ILead = {
   createdAt: Date;
   updatedAt: Date;
 };
+
+export interface AuthPayload {
+  userId: string;
+  email: string;
+  role: UserRole;
+}
+
+export interface PaginationMeta {
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+export interface ApiResponse<T> {
+  success: boolean;
+  data: T | null;
+  message?: string;
+  errors?: unknown[];
+  meta?: PaginationMeta;
+}

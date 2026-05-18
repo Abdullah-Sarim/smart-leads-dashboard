@@ -1,14 +1,13 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useAuth } from '../../features/auth';
-import { leadsApi, LeadsTable, LeadFilters, LeadQueryParams, Lead, LeadStats, TableSkeleton, LeadStatus, LeadSource } from '../../features/leads';
-import { StatsCards } from './StatsCards';
+import { leadsApi, LeadsTable, LeadFilters, LeadQueryParams, Lead, TableSkeleton, LeadStatus, LeadSource } from '../../features/leads';
 import { FullPageLoader, EmptyState, ErrorMessage, Pagination, Button } from '../../components/common';
 import { Modal, ConfirmDialog } from '../../components/common';
 import { Input, Select } from '../../components/common';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Plus, UserRound, Mail, CircleDot, Megaphone } from 'lucide-react';
+import { Plus, UserRound, CircleDot } from 'lucide-react';
 import { isApiError } from '../../lib';
 import toast from 'react-hot-toast';
 
@@ -21,11 +20,9 @@ const leadSchema = z.object({
 
 type LeadFormValues = z.infer<typeof leadSchema>;
 
-export function DashboardPage() {
+export function LeadsPage() {
   const { user } = useAuth();
   const [leads, setLeads] = useState<Lead[]>([]);
-  const [stats, setStats] = useState<LeadStats | null>(null);
-  const [statsLoading, setStatsLoading] = useState(false);
   const [meta, setMeta] = useState({ page: 1, limit: 10, total: 0, totalPages: 0, hasNextPage: false, hasPrevPage: false });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -40,18 +37,6 @@ export function DashboardPage() {
   const { register, handleSubmit, reset, formState: { errors } } = useForm<LeadFormValues>({
     resolver: zodResolver(leadSchema),
   });
-
-  const fetchStats = useCallback(async () => {
-    setStatsLoading(true);
-    try {
-      const data = await leadsApi.getStats();
-      setStats(data);
-    } catch {
-      // Stats are non-critical, silently fail
-    } finally {
-      setStatsLoading(false);
-    }
-  }, []);
 
   const fetchLeads = useCallback(async () => {
     setLoading(true);
@@ -70,10 +55,6 @@ export function DashboardPage() {
   useEffect(() => {
     fetchLeads();
   }, [fetchLeads]);
-
-  useEffect(() => {
-    fetchStats();
-  }, [fetchStats]);
 
   const handleFiltersChange = useCallback((newFilters: LeadQueryParams) => {
     setFilters(newFilters);
@@ -109,13 +90,12 @@ export function DashboardPage() {
       toast.success('Lead deleted successfully');
       setDeleteTarget(null);
       fetchLeads();
-      fetchStats();
     } catch (err) {
       toast.error(isApiError(err) ? err.message : 'Delete failed');
     } finally {
       setDeleting(false);
     }
-  }, [deleteTarget, fetchLeads, fetchStats]);
+  }, [deleteTarget, fetchLeads]);
 
   const onSubmit = async (data: LeadFormValues) => {
     setSubmitting(true);
@@ -131,7 +111,6 @@ export function DashboardPage() {
       setEditingLead(null);
       reset();
       fetchLeads();
-      fetchStats();
     } catch (err) {
       toast.error(isApiError(err) ? err.message : 'Operation failed');
     } finally {
@@ -157,15 +136,13 @@ export function DashboardPage() {
     <div className="h-full flex flex-col max-w-7xl mx-auto">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-4 pt-2 sticky top-0 z-10 bg-gray-50 dark:bg-gray-950">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Leads</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400">Manage and track your sales leads</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">All Leads</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400">View, search, and manage all leads</p>
         </div>
         <Button onClick={handleOpenForm} loading={submitting} className="w-full sm:w-auto">
           <Plus className="w-4 h-4" /> Add Lead
         </Button>
       </div>
-
-      <StatsCards stats={stats} loading={statsLoading} />
 
       <div className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-950 pb-3">
         <LeadFilters filters={filters} onFiltersChange={handleFiltersChange} onExport={handleExport} total={meta.total} />
