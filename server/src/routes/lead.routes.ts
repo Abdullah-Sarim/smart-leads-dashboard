@@ -9,6 +9,7 @@ const router = Router();
 
 router.post('/', authenticate, validate(createLeadSchema), leadController.create);
 router.get('/', authenticate, validate(leadQuerySchema, 'query'), leadController.getAll);
+router.get('/export/csv', authenticate, leadController.exportCSV);
 router.get('/:id', authenticate, validate(leadIdSchema, 'params'), leadController.getById);
 router.put('/:id', authenticate, validate(leadIdSchema, 'params'), validate(updateLeadSchema), leadController.update);
 router.delete('/:id', authenticate, authorizeRoles(UserRole.Admin), validate(leadIdSchema, 'params'), leadController.delete);

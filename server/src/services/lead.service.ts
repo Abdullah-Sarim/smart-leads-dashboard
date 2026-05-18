@@ -47,6 +47,28 @@ export class LeadService {
     return !!lead;
   }
 
+  async exportLeads(filters: LeadFilters, sort: 'latest' | 'oldest' = 'latest'): Promise<ILeadDocument[]> {
+    const query: FilterQuery<ILeadDocument> = {};
+
+    if (filters.status) {
+      query.status = filters.status;
+    }
+
+    if (filters.source) {
+      query.source = filters.source;
+    }
+
+    if (filters.search) {
+      query.$or = [
+        { name: { $regex: filters.search, $options: 'i' } },
+        { email: { $regex: filters.search, $options: 'i' } },
+      ];
+    }
+
+    const sortOrder = sort === 'latest' ? -1 : 1;
+    return Lead.find(query).sort({ createdAt: sortOrder }).populate('createdBy', '_id name');
+  }
+
   async getLeads(filters: LeadFilters, page = 1, limit = 10, sort: 'latest' | 'oldest' = 'latest'): Promise<GetLeadsResult> {
     const query: FilterQuery<ILeadDocument> = {};
 

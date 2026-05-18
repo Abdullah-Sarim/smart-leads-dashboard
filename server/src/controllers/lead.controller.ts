@@ -1,3 +1,4 @@
+import { Response } from 'express';
 import { leadService } from '../services/index.js';
 import { AuthRequest } from '../middleware/index.js';
 import { ApiError } from '../utils/ApiError.js';
@@ -53,6 +54,35 @@ export const LeadController = {
       throw ApiError.notFound('Lead not found');
     }
     ApiResponse.sendSuccess(res, null, 200, 'Lead deleted successfully');
+  }),
+
+  exportCSV: catchAsync(async (req: AuthRequest, res) => {
+    const { status, source, search, sort } = req.query as {
+      status?: LeadStatus;
+      source?: LeadSource;
+      search?: string;
+      sort?: 'latest' | 'oldest';
+    };
+
+    const leads = await leadService.exportLeads({ status, source, search }, sort || 'latest');
+
+    const escapeCSV = (value: string): string => {
+      if (value.includes(',') || value.includes('"') || value.includes('\n')) {
+        return `"${value.replace(/"/g, '""')}"`;
+      }
+      return value;
+    };
+
+    const headers = 'Name,Email,Status,Source,Created At';
+    const rows = leads.map((lead) =>
+      [escapeCSV(lead.name), escapeCSV(lead.email), escapeCSV(lead.status), escapeCSV(lead.source), escapeCSV(new Date(lead.createdAt).toISOString())].join(',')
+    );
+
+    const csv = [headers, ...rows].join('\n');
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename=leads.csv');
+    res.send(csv);
   }),
 };
 
