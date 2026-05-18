@@ -1,4 +1,10 @@
 export { Button } from './Button';
 export { Input } from './Input';
 export { Select } from './Select';
-export { Spinner, LoadingState, EmptyState, ErrorState } from './StatusViews';
+export { Badge } from './Badge';
+export { Modal } from './Modal';
+export { Loader, FullPageLoader } from './Loader';
+export { EmptyState } from './EmptyState';
+export { ErrorMessage } from './ErrorMessage';
+export { Pagination } from './Pagination';
+export { ConfirmDialog } from './ConfirmDialog';
