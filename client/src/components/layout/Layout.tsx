@@ -1,11 +1,11 @@
 import { Outlet } from 'react-router-dom';
-import { Navbar } from './Navbar';
+import { Sidebar } from './Sidebar';
 
 export function Layout() {
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navbar />
-      <main className="p-6">
+    <div className="flex h-screen bg-gray-50">
+      <Sidebar />
+      <main className="flex-1 overflow-auto">
         <Outlet />
       </main>
     </div>

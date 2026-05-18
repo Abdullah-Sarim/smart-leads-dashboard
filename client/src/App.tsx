@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { ProtectedRoute } from './ProtectedRoute';
-import { LoginPage, RegisterPage } from '../features/auth';
+import { ProtectedRoute } from './app';
+import { LoginPage, RegisterPage } from './features/auth';
+import { Layout } from './components/layout';
 
 function DashboardPage() {
   return <div>Dashboard</div>;
@@ -16,8 +17,10 @@ export default function App() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/" element={<ProtectedRoute />}>
-        <Route path="dashboard" element={<DashboardPage />} />
-        <Route path="leads/:id" element={<LeadDetailPage />} />
+        <Route element={<Layout />}>
+          <Route path="dashboard" element={<DashboardPage />} />
+          <Route path="leads/:id" element={<LeadDetailPage />} />
+        </Route>
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
