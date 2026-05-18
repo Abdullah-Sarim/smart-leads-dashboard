@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 import { useAuth } from '../../features/auth';
 import { leadsApi, LeadsTable, LeadFilters, LeadQueryParams, Lead } from '../../features/leads';
 import { FullPageLoader, EmptyState, ErrorMessage, Pagination, Button } from '../../components/common';
-import { Modal } from '../../components/common/Modal';
+import { Modal, ConfirmDialog } from '../../components/common';
 import { Input, Select } from '../../components/common';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -30,6 +30,9 @@ export function DashboardPage() {
   const [showForm, setShowForm] = useState(false);
   const [editingLead, setEditingLead] = useState<Lead | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Lead | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm<LeadFormValues>({
     resolver: zodResolver(leadSchema),
@@ -58,19 +61,16 @@ export function DashboardPage() {
   }, []);
 
   const handleExport = useCallback(async () => {
+    setExporting(true);
     try {
       await leadsApi.exportLeadsCsv(filters);
       toast.success('CSV exported successfully');
     } catch {
       toast.error('Export failed');
+    } finally {
+      setExporting(false);
     }
   }, [filters]);
-
-  const handleView = useCallback((lead: Lead) => {
-    setEditingLead(lead);
-    reset({ name: lead.name, email: lead.email, status: lead.status, source: lead.source });
-    setShowForm(true);
-  }, [reset]);
 
   const handleEdit = useCallback((lead: Lead) => {
     setEditingLead(lead);
@@ -78,33 +78,37 @@ export function DashboardPage() {
     setShowForm(true);
   }, [reset]);
 
-  const handleDelete = useCallback(async (lead: Lead) => {
-    if (!confirm(`Delete ${lead.name}?`)) return;
+  const handleDeleteConfirm = useCallback(async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
     try {
-      await leadsApi.deleteLead(lead._id);
-      toast.success('Lead deleted');
+      await leadsApi.deleteLead(deleteTarget._id);
+      toast.success('Lead deleted successfully');
+      setDeleteTarget(null);
       fetchLeads();
-    } catch {
-      toast.error('Delete failed');
+    } catch (err) {
+      toast.error(isApiError(err) ? err.message : 'Delete failed');
+    } finally {
+      setDeleting(false);
     }
-  }, [fetchLeads]);
+  }, [deleteTarget, fetchLeads]);
 
   const onSubmit = async (data: LeadFormValues) => {
     setSubmitting(true);
     try {
       if (editingLead) {
         await leadsApi.updateLead(editingLead._id, data);
-        toast.success('Lead updated');
+        toast.success('Lead updated successfully');
       } else {
         await leadsApi.createLead(data);
-        toast.success('Lead created');
+        toast.success('Lead created successfully');
       }
       setShowForm(false);
       setEditingLead(null);
       reset();
       fetchLeads();
-    } catch {
-      toast.error('Operation failed');
+    } catch (err) {
+      toast.error(isApiError(err) ? err.message : 'Operation failed');
     } finally {
       setSubmitting(false);
     }
@@ -148,7 +152,7 @@ export function DashboardPage() {
         <EmptyState title="No leads found" message="Try adjusting your filters or add a new lead" />
       ) : (
         <>
-          <LeadsTable leads={leads} currentUser={user!} onView={handleView} onEdit={handleEdit} onDelete={handleDelete} />
+          <LeadsTable leads={leads} currentUser={user!} onEdit={handleEdit} onDelete={setDeleteTarget} />
           <Pagination page={meta.page} totalPages={meta.totalPages} onPageChange={handlePageChange} />
         </>
       )}
@@ -159,7 +163,7 @@ export function DashboardPage() {
         title={editingLead ? 'Edit Lead' : 'Add New Lead'}
         footer={
           <>
-            <Button variant="secondary" onClick={handleCloseForm}>Cancel</Button>
+            <Button variant="secondary" onClick={handleCloseForm} disabled={submitting}>Cancel</Button>
             <Button onClick={handleSubmit(onSubmit)} loading={submitting}>{editingLead ? 'Update' : 'Create'}</Button>
           </>
         }
@@ -188,6 +192,17 @@ export function DashboardPage() {
           />
         </form>
       </Modal>
+
+      <ConfirmDialog
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleDeleteConfirm}
+        title="Delete Lead"
+        message={`Are you sure you want to delete ${deleteTarget?.name}? This action cannot be undone.`}
+        confirmLabel="Delete"
+        variant="danger"
+        loading={deleting}
+      />
     </div>
   );
 }
