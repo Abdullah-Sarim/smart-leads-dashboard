@@ -1,5 +1,6 @@
 import { leadService } from '../services/index.js';
 import { AuthRequest } from '../middleware/index.js';
+import { ApiError } from '../utils/ApiError.js';
 import { ApiResponse } from '../utils/ApiResponse.js';
 import { catchAsync } from '../utils/catchAsync.js';
 import { LeadStatus, LeadSource } from '../types/index.js';
@@ -28,6 +29,30 @@ export const LeadController = {
     );
 
     ApiResponse.sendSuccess(res, result.leads, 200, undefined, result.meta);
+  }),
+
+  getById: catchAsync(async (req: AuthRequest, res) => {
+    const lead = await leadService.getLeadById(req.params.id);
+    if (!lead) {
+      throw ApiError.notFound('Lead not found');
+    }
+    ApiResponse.sendSuccess(res, lead);
+  }),
+
+  update: catchAsync(async (req: AuthRequest, res) => {
+    const lead = await leadService.updateLead(req.params.id, req.body);
+    if (!lead) {
+      throw ApiError.notFound('Lead not found');
+    }
+    ApiResponse.sendSuccess(res, lead, 200, 'Lead updated successfully');
+  }),
+
+  delete: catchAsync(async (req: AuthRequest, res) => {
+    const deleted = await leadService.deleteLead(req.params.id);
+    if (!deleted) {
+      throw ApiError.notFound('Lead not found');
+    }
+    ApiResponse.sendSuccess(res, null, 200, 'Lead deleted successfully');
   }),
 };
 

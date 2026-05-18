@@ -34,6 +34,19 @@ export class LeadService {
     return lead;
   }
 
+  async getLeadById(id: string): Promise<ILeadDocument | null> {
+    return Lead.findById(id);
+  }
+
+  async updateLead(id: string, data: { name?: string; email?: string; status?: LeadStatus; source?: LeadSource }): Promise<ILeadDocument | null> {
+    return Lead.findByIdAndUpdate(id, data, { new: true });
+  }
+
+  async deleteLead(id: string): Promise<boolean> {
+    const lead = await Lead.findByIdAndDelete(id);
+    return !!lead;
+  }
+
   async getLeads(filters: LeadFilters, page = 1, limit = 10, sort: 'latest' | 'oldest' = 'latest'): Promise<GetLeadsResult> {
     const query: FilterQuery<ILeadDocument> = {};
 
