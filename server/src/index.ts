@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import { config } from './config/index.js';
 import { connectDB } from './config/db.js';
+import { errorMiddleware } from './middleware/index.js';
 import routes from './routes/index.js';
 
 const app = express();
@@ -33,14 +34,7 @@ app.use((req, res) => {
   res.status(404).json({ success: false, data: null, message: 'Route not found' });
 });
 
-app.use((err, _req, res, _next) => {
-  console.error('Server Error:', err);
-  res.status(500).json({
-    success: false,
-    data: null,
-    message: process.env.NODE_ENV === 'production' ? 'Internal server error' : err.message,
-  });
-});
+app.use(errorMiddleware);
 
 const PORT = config.port;
 

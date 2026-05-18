@@ -1,8 +1,9 @@
-import { Response } from 'express';
 import { body, query as queryValidator } from 'express-validator';
 import { leadService } from '../services/index.js';
-import { sendSuccess, sendError } from '../utils/response.js';
 import { AuthRequest, validate } from '../middleware/index.js';
+import { ApiError } from '../utils/ApiError.js';
+import { ApiResponse } from '../utils/ApiResponse.js';
+import { catchAsync } from '../utils/catchAsync.js';
 import { LeadStatus, LeadSource, QueryParams } from '../types/index.js';
 
 export const leadValidation = {
@@ -54,122 +55,73 @@ export const leadValidation = {
   ],
 };
 
-export class LeadController {
-  async create(req: AuthRequest, res: Response): Promise<void> {
-    try {
-      const { name, email, status, source } = req.body;
-      const lead = await leadService.createLead({ name, email, status, source }, req.user!.userId);
-      sendSuccess(res, lead, 201, undefined, 'Lead created successfully');
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to create lead';
-      sendError(res, 400, message);
+export const LeadController = {
+  create: catchAsync(async (req: AuthRequest, res) => {
+    const { name, email, status, source } = req.body;
+    const lead = await leadService.createLead({ name, email, status, source }, req.user!.userId);
+    ApiResponse.sendSuccess(res, lead, 201, 'Lead created successfully');
+  }),
+
+  getAll: catchAsync(async (req: AuthRequest, res) => {
+    const params: QueryParams = {
+      page: req.query.page as unknown as number,
+      limit: req.query.limit as unknown as number,
+      search: req.query.search as string,
+      status: req.query.status as LeadStatus,
+      source: req.query.source as LeadSource,
+      sortBy: req.query.sortBy as 'createdAt',
+      order: req.query.order as 'asc' | 'desc',
+    };
+
+    const result = await leadService.getLeads(params, req.user!.userId, req.user!.role);
+    ApiResponse.sendSuccess(res, result.leads, 200, undefined, result.meta);
+  }),
+
+  getById: catchAsync(async (req: AuthRequest, res) => {
+    const lead = await leadService.getLeadById(req.params.id, req.user!.userId, req.user!.role);
+    if (!lead) {
+      throw ApiError.notFound('Lead not found');
     }
-  }
+    ApiResponse.sendSuccess(res, lead);
+  }),
 
-  async getAll(req: AuthRequest, res: Response): Promise<void> {
-    try {
-      const params: QueryParams = {
-        page: req.query.page as unknown as number,
-        limit: req.query.limit as unknown as number,
-        search: req.query.search as string,
-        status: req.query.status as LeadStatus,
-        source: req.query.source as LeadSource,
-        sortBy: req.query.sortBy as 'createdAt',
-        order: req.query.order as 'asc' | 'desc',
-      };
-
-      const result = await leadService.getLeads(params, req.user!.userId, req.user!.role);
-      sendSuccess(res, result.leads, 200, result.meta);
-    } catch (error) {
-      sendError(res, 500, 'Failed to fetch leads');
+  update: catchAsync(async (req: AuthRequest, res) => {
+    const { name, email, status, source } = req.body;
+    const lead = await leadService.updateLead(req.params.id, { name, email, status, source }, req.user!.userId, req.user!.role);
+    if (!lead) {
+      throw ApiError.notFound('Lead not found or access denied');
     }
-  }
+    ApiResponse.sendSuccess(res, lead, 200, 'Lead updated successfully');
+  }),
 
-  async getById(req: AuthRequest, res: Response): Promise<void> {
-    try {
-      const lead = await leadService.getLeadById(
-        req.params.id,
-        req.user!.userId,
-        req.user!.role
-      );
-
-      if (!lead) {
-        sendError(res, 404, 'Lead not found');
-        return;
-      }
-
-      sendSuccess(res, lead);
-    } catch (error) {
-      sendError(res, 500, 'Failed to fetch lead');
+  delete: catchAsync(async (req: AuthRequest, res) => {
+    const deleted = await leadService.deleteLead(req.params.id, req.user!.userId, req.user!.role);
+    if (!deleted) {
+      throw ApiError.notFound('Lead not found or access denied');
     }
-  }
+    ApiResponse.sendSuccess(res, null, 200, 'Lead deleted successfully');
+  }),
 
-  async update(req: AuthRequest, res: Response): Promise<void> {
-    try {
-      const { name, email, status, source } = req.body;
-      const lead = await leadService.updateLead(
-        req.params.id,
-        { name, email, status, source },
-        req.user!.userId,
-        req.user!.role
-      );
+  exportCSV: catchAsync(async (req: AuthRequest, res) => {
+    const params: QueryParams = {
+      search: req.query.search as string,
+      status: req.query.status as LeadStatus,
+      source: req.query.source as LeadSource,
+      sortBy: req.query.sortBy as 'createdAt',
+      order: req.query.order as 'asc' | 'desc',
+    };
 
-      if (!lead) {
-        sendError(res, 404, 'Lead not found or access denied');
-        return;
-      }
+    const leads = await leadService.exportLeads(params, req.user!.userId, req.user!.role);
 
-      sendSuccess(res, lead, 200, undefined, 'Lead updated successfully');
-    } catch (error) {
-      sendError(res, 500, 'Failed to update lead');
-    }
-  }
+    const csvHeaders = 'Name,Email,Status,Source,Created At\n';
+    const csvRows = leads.map((lead) =>
+      `"${lead.name}","${lead.email}","${lead.status}","${lead.source}","${lead.createdAt.toISOString()}"`
+    ).join('\n');
 
-  async delete(req: AuthRequest, res: Response): Promise<void> {
-    try {
-      const deleted = await leadService.deleteLead(
-        req.params.id,
-        req.user!.userId,
-        req.user!.role
-      );
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="leads-${Date.now()}.csv"`);
+    res.send(csvHeaders + csvRows);
+  }),
+};
 
-      if (!deleted) {
-        sendError(res, 404, 'Lead not found or access denied');
-        return;
-      }
-
-      sendSuccess(res, null, 200, undefined, 'Lead deleted successfully');
-    } catch (error) {
-      sendError(res, 500, 'Failed to delete lead');
-    }
-  }
-
-  async exportCSV(req: AuthRequest, res: Response): Promise<void> {
-    try {
-      const params: QueryParams = {
-        search: req.query.search as string,
-        status: req.query.status as LeadStatus,
-        source: req.query.source as LeadSource,
-        sortBy: req.query.sortBy as 'createdAt',
-        order: req.query.order as 'asc' | 'desc',
-      };
-
-      const leads = await leadService.exportLeads(params, req.user!.userId, req.user!.role);
-
-      const csvHeaders = 'Name,Email,Status,Source,Created At\n';
-      const csvRows = leads.map((lead) =>
-        `"${lead.name}","${lead.email}","${lead.status}","${lead.source}","${lead.createdAt.toISOString()}"`
-      ).join('\n');
-
-      const csv = csvHeaders + csvRows;
-
-      res.setHeader('Content-Type', 'text/csv');
-      res.setHeader('Content-Disposition', `attachment; filename="leads-${Date.now()}.csv"`);
-      res.send(csv);
-    } catch (error) {
-      sendError(res, 500, 'Failed to export leads');
-    }
-  }
-}
-
-export const leadController = new LeadController();
+export const leadController = LeadController;

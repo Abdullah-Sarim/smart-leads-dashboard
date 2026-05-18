@@ -1,8 +1,9 @@
-import { Response } from 'express';
 import { body } from 'express-validator';
 import { authService } from '../services/index.js';
-import { sendSuccess, sendError } from '../utils/response.js';
 import { AuthRequest, validate } from '../middleware/index.js';
+import { ApiError } from '../utils/ApiError.js';
+import { ApiResponse } from '../utils/ApiResponse.js';
+import { catchAsync } from '../utils/catchAsync.js';
 import { UserRole } from '../types/index.js';
 
 export const authValidation = {
@@ -36,57 +37,38 @@ export const authValidation = {
   ],
 };
 
-export class AuthController {
-  async register(req: AuthRequest, res: Response): Promise<void> {
-    try {
-      const { name, email, password, role } = req.body;
-      const result = await authService.register(name, email, password, role);
-      sendSuccess(res, result, 201, undefined, 'Registration successful');
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Registration failed';
-      sendError(res, 400, message);
-    }
-  }
+export const AuthController = {
+  register: catchAsync(async (req: AuthRequest, res) => {
+    const { name, email, password, role } = req.body;
+    const result = await authService.register(name, email, password, role);
+    ApiResponse.sendSuccess(res, result, 201, 'Registration successful');
+  }),
 
-  async login(req: AuthRequest, res: Response): Promise<void> {
-    try {
-      const { email, password } = req.body;
-      const result = await authService.login(email, password);
-      sendSuccess(res, result, 200, undefined, 'Login successful');
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Login failed';
-      sendError(res, 401, message);
-    }
-  }
+  login: catchAsync(async (req: AuthRequest, res) => {
+    const { email, password } = req.body;
+    const result = await authService.login(email, password);
+    ApiResponse.sendSuccess(res, result, 200, 'Login successful');
+  }),
 
-  async getProfile(req: AuthRequest, res: Response): Promise<void> {
-    try {
-      const user = await authService.getUserById(req.user!.userId);
-      if (!user) {
-        sendError(res, 404, 'User not found');
-        return;
-      }
-      sendSuccess(res, {
-        _id: user._id.toString(),
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        createdAt: user.createdAt,
-        updatedAt: user.updatedAt,
-      });
-    } catch (error) {
-      sendError(res, 500, 'Failed to fetch profile');
+  getProfile: catchAsync(async (req: AuthRequest, res) => {
+    const user = await authService.getUserById(req.user!.userId);
+    if (!user) {
+      throw ApiError.notFound('User not found');
     }
-  }
+    ApiResponse.sendSuccess(res, {
+      _id: user._id.toString(),
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    });
+  }),
 
-  async getAllUsers(req: AuthRequest, res: Response): Promise<void> {
-    try {
-      const users = await authService.getAllUsers();
-      sendSuccess(res, users);
-    } catch (error) {
-      sendError(res, 500, 'Failed to fetch users');
-    }
-  }
-}
+  getAllUsers: catchAsync(async (_req: AuthRequest, res) => {
+    const users = await authService.getAllUsers();
+    ApiResponse.sendSuccess(res, users);
+  }),
+};
 
-export const authController = new AuthController();
+export const authController = AuthController;
