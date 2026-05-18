@@ -71,16 +71,17 @@ A full-stack MERN (MongoDB, Express, React, Node.js) application for managing sa
 
 ## Role Permissions
 
-| Feature                         | Admin | Sales User |
-|---------------------------------|:-----:|:----------:|
-| View all leads                  |  ✓   |     ✓     |
-| View individual lead            |  ✓   |     ✓     |
-| Create lead                     |  ✓   |     ✓     |
-| Update lead                     |  ✓   |     ✓     |
-| Delete lead                     |  ✓   |     ✗     |
-| Export leads to CSV             |  ✓   |     ✓     |
-| View all users                  |  ✓   |     ✗     |
-| Manage users (register/delete)  |  ✓   |     ✗     |
+| Feature                              | Admin | Sales User |
+|--------------------------------------|:-----:|:----------:|
+| View all leads                       |  ✓   |     ✓     |
+| View individual lead                 |  ✓   |     ✓     |
+| Create lead                          |  ✓   |     ✓     |
+| Update lead                          |  ✓   |     ✓     |
+| Delete lead                          |  ✓   |     ✗     |
+| Export leads to CSV                  |  ✓   |     ✓     |
+| View all users                       |  ✓   |     ✗     |
+| Manage users (activate/deactivate)   |  ✓   |     ✗     |
+| User account activation control      |  ✓   |     ✗     |
 
 ---
 

@@ -8,8 +8,18 @@ export interface User {
   name: string;
   email: string;
   role: UserRole;
+  isActive: boolean;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface UserStatusUpdatePayload {
+  isActive: boolean;
+}
+
+export interface UsersResponse {
+  users: User[];
+  meta: PaginationMeta;
 }
 
 export interface LoginPayload {

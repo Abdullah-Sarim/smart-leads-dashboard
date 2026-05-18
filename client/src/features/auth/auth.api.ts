@@ -1,5 +1,5 @@
 import { api } from '../../lib';
-import type { LoginPayload, RegisterPayload, AuthResponse, ApiResponse, User } from '../../types';
+import type { LoginPayload, RegisterPayload, AuthResponse, ApiResponse, User, UserStatusUpdatePayload, UsersResponse, PaginationMeta } from '../../types';
 
 export const authApi = {
   register: async (payload: RegisterPayload): Promise<AuthResponse> => {
@@ -16,13 +16,19 @@ export const authApi = {
     const res = await api.get<ApiResponse<User>>('/auth/me');
     return res.data.data;
   },
+};
 
-  getAllUsers: async (): Promise<User[]> => {
-    const res = await api.get<ApiResponse<User[]>>('/auth/users');
-    return res.data.data;
+export const usersApi = {
+  getAllUsers: async (page = 1, limit = 10): Promise<{ users: User[]; meta: PaginationMeta }> => {
+    const res = await api.get<ApiResponse<User[]> & { meta?: PaginationMeta }>(`/users?page=${page}&limit=${limit}`);
+    return {
+      users: res.data.data || [],
+      meta: res.data.meta || { page, limit, total: 0, totalPages: 0, hasNextPage: false, hasPrevPage: false },
+    };
   },
 
-  deleteUser: async (userId: string): Promise<void> => {
-    await api.delete(`/auth/users/${userId}`);
+  updateUserStatus: async (userId: string, payload: UserStatusUpdatePayload): Promise<User> => {
+    const res = await api.patch<ApiResponse<User>>(`/users/${userId}/status`, payload);
+    return res.data.data;
   },
 };

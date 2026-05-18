@@ -3,24 +3,25 @@ import jwt from 'jsonwebtoken';
 import { config } from '../config/index.js';
 import { ApiError } from '../utils/ApiError.js';
 import { AuthPayload, UserRole } from '../types/index.js';
+import { User } from '../models/index.js';
 
 declare global {
   namespace Express {
     interface Request {
-      user?: AuthPayload;
+      user?: AuthPayload & { isActive?: boolean };
     }
   }
 }
 
 export interface AuthRequest extends Request {
-  user?: AuthPayload;
+  user?: AuthPayload & { isActive?: boolean };
 }
 
-export const authenticate = (
+export const authenticate = async (
   req: Request,
   _res: Response,
   next: NextFunction
-): void => {
+): Promise<void> => {
   try {
     const authHeader = req.headers.authorization;
 
@@ -30,7 +31,17 @@ export const authenticate = (
 
     const token = authHeader.split(' ')[1];
     const decoded = jwt.verify(token, config.jwt.secret) as AuthPayload;
-    req.user = decoded;
+
+    const user = await User.findById(decoded.userId).select('isActive');
+    if (!user) {
+      throw ApiError.unauthorized('User not found');
+    }
+
+    if (!user.isActive) {
+      throw ApiError.forbidden('Your account has been deactivated. Please contact admin.');
+    }
+
+    req.user = { ...decoded, isActive: user.isActive };
     next();
   } catch (error) {
     if (error instanceof jwt.JsonWebTokenError) {

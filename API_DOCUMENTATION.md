@@ -105,26 +105,16 @@ curl -X POST http://localhost:5000/api/auth/register \
 {
   "success": true,
   "data": {
-    "_id": "66f1a2b3c4d5e6f7a8b9c0d1",
-    "name": "John Doe",
-    "email": "john@example.com",
-    "role": "sales",
-    "createdAt": "2025-10-14T12:00:00.000Z"
-  }
-}
-```
-
-**Error Response (400 Bad Request)**
-
-```json
-{
-  "success": false,
-  "message": "Validation failed",
-  "errors": [
-    {
-      "message": "Email already in use"
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "user": {
+      "_id": "66f1a2b3c4d5e6f7a8b9c0d1",
+      "name": "John Doe",
+      "email": "john@example.com",
+      "role": "sales",
+      "isActive": true,
+      "createdAt": "2025-10-14T12:00:00.000Z"
     }
-  ]
+  }
 }
 ```
 
@@ -164,6 +154,7 @@ curl -X POST http://localhost:5000/api/auth/login \
       "name": "Admin User",
       "email": "admin@demo.com",
       "role": "admin",
+      "isActive": true,
       "createdAt": "2025-10-01T09:00:00.000Z"
     }
   }
@@ -176,6 +167,15 @@ curl -X POST http://localhost:5000/api/auth/login \
 {
   "success": false,
   "message": "Invalid email or password"
+}
+```
+
+**Error Response (403 Forbidden - Inactive Account)**
+
+```json
+{
+  "success": false,
+  "message": "Your account has been deactivated. Please contact admin."
 }
 ```
 
@@ -208,17 +208,154 @@ curl http://localhost:5000/api/auth/me \
     "name": "Admin User",
     "email": "admin@demo.com",
     "role": "admin",
-    "createdAt": "2025-10-01T09:00:00.000Z"
+    "isActive": true,
+    "createdAt": "2025-10-01T09:00:00.000Z",
+    "updatedAt": "2025-10-01T09:00:00.000Z"
   }
 }
 ```
 
-**Error Response (401 Unauthorized)**
+---
+
+## User Endpoints (Admin Only)
+
+All user endpoints require authentication and admin role.
+
+---
+
+### GET `/api/users`
+
+Get a paginated list of all users.
+
+**Headers**
+
+```
+Authorization: Bearer <token>
+```
+
+**Query Parameters**
+
+| Parameter | Type   | Default | Description           |
+|-----------|--------|---------|-----------------------|
+| `page`    | number | `1`     | Page number           |
+| `limit`   | number | `10`    | Items per page        |
+
+**Example Request**
+
+```bash
+curl "http://localhost:5000/api/users?page=1&limit=10" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+```
+
+**Example Response (200 OK)**
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "_id": "66f1a2b3c4d5e6f7a8b9c0d1",
+      "name": "Admin User",
+      "email": "admin@demo.com",
+      "role": "admin",
+      "isActive": true,
+      "createdAt": "2025-10-01T09:00:00.000Z",
+      "updatedAt": "2025-10-01T09:00:00.000Z"
+    },
+    {
+      "_id": "66f1a2b3c4d5e6f7a8b9c0d2",
+      "name": "Sales User",
+      "email": "sales@demo.com",
+      "role": "sales",
+      "isActive": true,
+      "createdAt": "2025-10-02T10:00:00.000Z",
+      "updatedAt": "2025-10-02T10:00:00.000Z"
+    }
+  ],
+  "meta": {
+    "total": 2,
+    "page": 1,
+    "limit": 10,
+    "totalPages": 1
+  }
+}
+```
+
+**Error Response (403 Forbidden)**
 
 ```json
 {
   "success": false,
-  "message": "No token provided"
+  "message": "Access denied. Insufficient permissions"
+}
+```
+
+---
+
+### PATCH `/api/users/:id/status`
+
+Update a user's active status.
+
+**Headers**
+
+```
+Authorization: Bearer <token>
+```
+
+**Path Parameters**
+
+| Parameter | Type   | Description      |
+|-----------|--------|------------------|
+| `id`      | string | User's ObjectId  |
+
+**Body Parameters**
+
+| Field    | Type    | Required | Description                     |
+|----------|---------|----------|--------------------------------|
+| `isActive` | boolean | Yes     | `true` to activate, `false` to deactivate |
+
+**Example Request**
+
+```bash
+curl -X PATCH http://localhost:5000/api/users/66f1a2b3c4d5e6f7a8b9c0d2/status \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
+  -d '{ "isActive": false }'
+```
+
+**Example Response (200 OK)**
+
+```json
+{
+  "success": true,
+  "data": {
+    "_id": "66f1a2b3c4d5e6f7a8b9c0d2",
+    "name": "Sales User",
+    "email": "sales@demo.com",
+    "role": "sales",
+    "isActive": false,
+    "createdAt": "2025-10-02T10:00:00.000Z",
+    "updatedAt": "2025-10-15T14:30:00.000Z"
+  },
+  "message": "User status updated successfully"
+}
+```
+
+**Error Response (400 Bad Request - Self Deactivation)**
+
+```json
+{
+  "success": false,
+  "message": "You cannot deactivate your own account"
+}
+```
+
+**Error Response (403 Forbidden)**
+
+```json
+{
+  "success": false,
+  "message": "Access denied. Insufficient permissions"
 }
 ```
 
@@ -593,17 +730,19 @@ GET /api/leads?search=john&status=New&source=Website&sort=latest&page=1&limit=10
 
 ## Role Restrictions Summary
 
-| Endpoint                    | Admin | Sales User |
-|-----------------------------|:-----:|:----------:|
-| POST /api/auth/register     |  ✓   |     ✗     |
-| POST /api/auth/login        |  ✓   |     ✓     |
-| GET /api/auth/me            |  ✓   |     ✓     |
-| GET /api/leads              |  ✓   |     ✓     |
-| GET /api/leads/:id          |  ✓   |     ✓     |
-| POST /api/leads             |  ✓   |     ✓     |
-| PUT /api/leads/:id          |  ✓   |     ✓     |
-| DELETE /api/leads/:id       |  ✓   |     ✗     |
-| GET /api/leads/export/csv   |  ✓   |     ✓     |
+| Endpoint                        | Admin | Sales User |
+|---------------------------------|:-----:|:----------:|
+| POST /api/auth/register         |  ✓   |     ✓     |
+| POST /api/auth/login            |  ✓   |     ✓     |
+| GET /api/auth/me                |  ✓   |     ✓     |
+| GET /api/users                  |  ✓   |     ✗     |
+| PATCH /api/users/:id/status     |  ✓   |     ✗     |
+| GET /api/leads                  |  ✓   |     ✓     |
+| GET /api/leads/:id              |  ✓   |     ✓     |
+| POST /api/leads                 |  ✓   |     ✓     |
+| PUT /api/leads/:id              |  ✓   |     ✓     |
+| DELETE /api/leads/:id           |  ✓   |     ✗     |
+| GET /api/leads/export/csv      |  ✓   |     ✓     |
 
 ---
 

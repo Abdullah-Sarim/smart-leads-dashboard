@@ -34,6 +34,10 @@ const userSchema = new Schema<IUserDocument>(
       },
       default: UserRole.Sales,
     },
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
   },
   {
     timestamps: true,

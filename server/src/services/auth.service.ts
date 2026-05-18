@@ -39,6 +39,10 @@ export class AuthService {
       throw ApiError.unauthorized('Invalid email or password');
     }
 
+    if (!user.isActive) {
+      throw ApiError.forbidden('Your account has been deactivated. Please contact admin.');
+    }
+
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
       throw ApiError.unauthorized('Invalid email or password');
@@ -85,6 +89,7 @@ export class AuthService {
       name: user.name,
       email: user.email,
       role: user.role as UserRole,
+      isActive: user.isActive,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
     };

@@ -11,7 +11,7 @@ const navItems = [
 ];
 
 const adminNavItems = [
-  { label: 'Sales Users', to: '/users', icon: UserCog },
+  { label: 'Users Management', to: '/users', icon: UserCog },
 ];
 
 interface SidebarProps {
