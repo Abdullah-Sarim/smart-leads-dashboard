@@ -613,6 +613,104 @@ curl http://localhost:5000/api/leads/66f1a2b3c4d5e6f7a8b9c0d2 \
 
 ---
 
+### PATCH `/api/leads/:id/assign`
+
+Assign or unassign a lead to a sales user. Only **Admin** users can assign leads.
+
+**Headers**
+
+```
+Authorization: Bearer <token>
+```
+
+**Body Parameters**
+
+| Field      | Type    | Required | Description                           |
+|------------|---------|----------|---------------------------------------|
+| `assignedTo` | string | No       | User ID to assign, or `null` to unassign |
+
+**Example Request**
+
+```bash
+curl -X PATCH http://localhost:5000/api/leads/66f1a2b3c4d5e6f7a8b9c0d2/assign \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
+  -d '{ "assignedTo": "66f1a2b3c4d5e6f7a8b9c0d3" }'
+```
+
+**Example Response (200 OK)**
+
+```json
+{
+  "success": true,
+  "data": {
+    "_id": "66f1a2b3c4d5e6f7a8b9c0d2",
+    "name": "John Smith",
+    "email": "john@example.com",
+    "status": "New",
+    "source": "Website",
+    "assignedTo": "66f1a2b3c4d5e6f7a8b9c0d3",
+    "createdAt": "2025-10-14T10:30:00.000Z",
+    "updatedAt": "2025-10-15T11:00:00.000Z"
+  },
+  "message": "Lead assigned successfully"
+}
+```
+
+---
+
+### GET `/api/leads/assigned`
+
+Get leads assigned to the current sales user.
+
+**Headers**
+
+```
+Authorization: Bearer <token>
+```
+
+**Query Parameters**
+
+| Parameter | Type   | Default | Description           |
+|-----------|--------|---------|-----------------------|
+| `page`    | number | `1`     | Page number           |
+| `limit`   | number | `10`    | Items per page        |
+
+**Example Request**
+
+```bash
+curl "http://localhost:5000/api/leads/assigned?page=1&limit=10" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+```
+
+**Example Response (200 OK)**
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "_id": "66f1a2b3c4d5e6f7a8b9c0d2",
+      "name": "John Smith",
+      "email": "john@example.com",
+      "status": "New",
+      "source": "Website",
+      "assignedTo": "66f1a2b3c4d5e6f7a8b9c0d3",
+      "createdAt": "2025-10-14T10:30:00.000Z",
+      "updatedAt": "2025-10-14T10:30:00.000Z"
+    }
+  ],
+  "meta": {
+    "total": 1,
+    "page": 1,
+    "limit": 10,
+    "totalPages": 1
+  }
+}
+```
+
+---
+
 ### POST `/api/leads`
 
 Create a new lead.
@@ -885,6 +983,8 @@ GET /api/leads?search=john&status=New&source=Website&sort=latest&page=1&limit=10
 | GET /api/leads/:id              |  ✓   |     ✓     |
 | POST /api/leads                 |  ✓   |     ✓     |
 | PUT /api/leads/:id              |  ✓   |     ✓     |
+| PATCH /api/leads/:id/assign     |  ✓   |     ✗     |
+| GET /api/leads/assigned          |  ✗   |     ✓     |
 | DELETE /api/leads/:id           |  ✓   |     ✗     |
 | GET /api/leads/export/csv      |  ✓   |     ✓     |
 

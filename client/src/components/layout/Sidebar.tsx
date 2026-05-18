@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Users, LogOut, ChevronLeft, ChevronRight, X, UserCog, UserCircle } from 'lucide-react';
+import { LayoutDashboard, Users, LogOut, ChevronLeft, ChevronRight, X, UserCog, UserCircle, UserCheck } from 'lucide-react';
 import { useAuth } from '../../features/auth';
 import { UserRole } from '../../types';
 import { useState } from 'react';
@@ -8,6 +8,7 @@ import { LogoutConfirmDialog, ThemeToggle, UserAvatar } from '../common';
 const navItems = [
   { label: 'Dashboard', to: '/', icon: LayoutDashboard },
   { label: 'Leads', to: '/leads', icon: Users },
+  { label: 'My Assigned Leads', to: '/leads/assigned', icon: UserCheck },
   { label: 'Account', to: '/account', icon: UserCircle },
 ];
 

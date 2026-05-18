@@ -1,15 +1,17 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useAuth } from '../../features/auth';
 import { leadsApi, LeadsTable, LeadFilters, LeadQueryParams, Lead, TableSkeleton, LeadStatus, LeadSource } from '../../features/leads';
+import { usersApi } from '../../features/auth/auth.api';
 import { FullPageLoader, EmptyState, ErrorMessage, Pagination, Button } from '../../components/common';
 import { Modal, ConfirmDialog } from '../../components/common';
 import { Input, Select } from '../../components/common';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Plus, UserRound, CircleDot } from 'lucide-react';
+import { Plus, UserRound, CircleDot, UserPlus } from 'lucide-react';
 import { isApiError } from '../../lib';
 import toast from 'react-hot-toast';
+import type { User } from '../../types';
 
 const leadSchema = z.object({
   name: z.string().trim().min(2, 'Name must be at least 2 characters'),
@@ -33,6 +35,10 @@ export function LeadsPage() {
   const [exporting, setExporting] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Lead | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [assignTarget, setAssignTarget] = useState<Lead | null>(null);
+  const [users, setUsers] = useState<User[]>([]);
+  const [selectedUserId, setSelectedUserId] = useState('');
+  const [assigning, setAssigning] = useState(false);
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm<LeadFormValues>({
     resolver: zodResolver(leadSchema),
@@ -52,9 +58,24 @@ export function LeadsPage() {
     }
   }, [filters]);
 
+  const fetchUsers = useCallback(async () => {
+    try {
+      const res = await usersApi.getAllUsers(1, 50);
+      setUsers(res.users.filter(u => u.role === 'sales' && u.isActive));
+    } catch {
+      // non-critical
+    }
+  }, []);
+
   useEffect(() => {
     fetchLeads();
   }, [fetchLeads]);
+
+  useEffect(() => {
+    if (user?.role === 'admin') {
+      fetchUsers();
+    }
+  }, [fetchUsers, user?.role]);
 
   const handleFiltersChange = useCallback((newFilters: LeadQueryParams) => {
     setFilters(newFilters);
@@ -130,6 +151,26 @@ export function LeadsPage() {
     reset();
   };
 
+  const handleAssign = (lead: Lead) => {
+    setAssignTarget(lead);
+    setSelectedUserId(lead.assignedTo || '');
+  };
+
+  const handleAssignConfirm = async () => {
+    if (!assignTarget) return;
+    setAssigning(true);
+    try {
+      await leadsApi.assignLead(assignTarget._id, selectedUserId || null);
+      toast.success(selectedUserId ? 'Lead assigned successfully' : 'Lead unassigned successfully');
+      setAssignTarget(null);
+      fetchLeads();
+    } catch (err) {
+      toast.error(isApiError(err) ? err.message : 'Assign failed');
+    } finally {
+      setAssigning(false);
+    }
+  };
+
   if (loading && leads.length === 0) return <FullPageLoader />;
 
   return (
@@ -157,7 +198,7 @@ export function LeadsPage() {
           <EmptyState title="No leads found" message="Try adjusting your filters or add a new lead" />
         ) : (
           <>
-            <LeadsTable leads={leads} currentUser={user!} onEdit={handleEdit} onDelete={setDeleteTarget} />
+            <LeadsTable leads={leads} currentUser={user!} onEdit={handleEdit} onDelete={setDeleteTarget} onAssign={handleAssign} />
             <Pagination page={meta.page} totalPages={meta.totalPages} onPageChange={handlePageChange} />
           </>
         )}
@@ -234,6 +275,34 @@ export function LeadsPage() {
         variant="danger"
         loading={deleting}
       />
+
+      <Modal
+        isOpen={!!assignTarget}
+        onClose={() => setAssignTarget(null)}
+        title="Assign Lead"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setAssignTarget(null)} disabled={assigning}>Cancel</Button>
+            <Button onClick={handleAssignConfirm} loading={assigning}>Assign</Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            Select a sales user to assign <span className="font-semibold text-gray-900 dark:text-gray-100">{assignTarget?.name}</span> to.
+          </p>
+          <select
+            value={selectedUserId}
+            onChange={(e) => setSelectedUserId(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400"
+          >
+            <option value="">Unassign</option>
+            {users.map(u => (
+              <option key={u._id} value={u._id}>{u.name} ({u.email})</option>
+            ))}
+          </select>
+        </div>
+      </Modal>
     </div>
   );
 }

@@ -18,6 +18,7 @@ export interface Lead {
   status: LeadStatus;
   source: LeadSource;
   createdBy?: { _id: string; name: string };
+  assignedTo?: string;
   createdAt: string;
   updatedAt: string;
 }

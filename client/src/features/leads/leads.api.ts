@@ -33,6 +33,16 @@ export const leadsApi = {
     await api.delete(`/leads/${id}`);
   },
 
+  assignLead: async (id: string, assignedTo: string | null): Promise<Lead> => {
+    const res = await api.patch<ApiResponse<Lead>>(`/leads/${id}/assign`, { assignedTo });
+    return res.data.data;
+  },
+
+  getAssignedLeads: async (page = 1): Promise<{ leads: Lead[]; meta: PaginationMeta }> => {
+    const res = await api.get<ApiResponse<Lead[]> & { meta: PaginationMeta }>(`/leads/assigned?page=${page}`);
+    return { leads: res.data.data, meta: res.data.meta! };
+  },
+
   exportLeadsCsv: async (params: LeadQueryParams): Promise<void> => {
     const res = await api.get('/leads/export/csv', { params, responseType: 'blob' });
     const url = URL.createObjectURL(res.data);

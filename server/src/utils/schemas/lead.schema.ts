@@ -30,6 +30,11 @@ export const leadQuerySchema = z.object({
   limit: z.string().transform(Number).pipe(z.number().int().positive().max(100)).optional(),
 });
 
+export const assignLeadSchema = z.object({
+  assignedTo: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid user ID').nullable(),
+});
+
 export type CreateLeadInput = z.infer<typeof createLeadSchema>;
 export type UpdateLeadInput = z.infer<typeof updateLeadSchema>;
 export type LeadQueryInput = z.infer<typeof leadQuerySchema>;
+export type AssignLeadInput = z.infer<typeof assignLeadSchema>;

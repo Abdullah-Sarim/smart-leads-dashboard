@@ -3,7 +3,7 @@ import { AuthRequest } from '../middleware/index.js';
 import { ApiError } from '../utils/ApiError.js';
 import { ApiResponse } from '../utils/ApiResponse.js';
 import { catchAsync } from '../utils/catchAsync.js';
-import { LeadStatus, LeadSource } from '../types/index.js';
+import { LeadStatus, LeadSource, UserRole } from '../types/index.js';
 
 export const LeadController = {
   create: catchAsync(async (req: AuthRequest, res) => {
@@ -54,6 +54,25 @@ export const LeadController = {
       throw ApiError.notFound('Lead not found');
     }
     ApiResponse.sendSuccess(res, null, 200, 'Lead deleted successfully');
+  }),
+
+  assign: catchAsync(async (req: AuthRequest, res) => {
+    if (req.user!.role !== UserRole.Admin) {
+      throw ApiError.forbidden('Only admin can assign leads');
+    }
+    const { assignedTo } = req.body;
+    const lead = await leadService.assignLead(req.params.id, assignedTo || null);
+    if (!lead) {
+      throw ApiError.notFound('Lead not found');
+    }
+    ApiResponse.sendSuccess(res, lead, 200, 'Lead assigned successfully');
+  }),
+
+  getAssignedLeads: catchAsync(async (req: AuthRequest, res) => {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const result = await leadService.getAssignedLeads(req.user!.userId, page, limit);
+    ApiResponse.sendSuccess(res, result.leads, 200, undefined, result.meta);
   }),
 
   exportCSV: catchAsync(async (req: AuthRequest, res) => {

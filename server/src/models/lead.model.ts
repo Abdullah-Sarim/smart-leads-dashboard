@@ -40,6 +40,11 @@ const leadSchema = new Schema<ILeadDocument>(
       ref: 'User',
       required: true,
     } as Record<string, unknown>,
+    assignedTo: {
+      type: 'ObjectId',
+      ref: 'User',
+      default: null,
+    } as Record<string, unknown>,
   },
   {
     timestamps: true,
@@ -51,5 +56,6 @@ leadSchema.index({ status: 1 });
 leadSchema.index({ source: 1 });
 leadSchema.index({ createdAt: -1 });
 leadSchema.index({ createdBy: 1 });
+leadSchema.index({ assignedTo: 1 });
 
 export const Lead = mongoose.model<ILeadDocument>('Lead', leadSchema);

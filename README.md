@@ -51,6 +51,8 @@ A full-stack MERN (MongoDB, Express, React, Node.js) application for managing sa
 - [x] User Account Activation Control (isActive field)
 - [x] Admin User Management (activate/deactivate users)
 - [x] Account Management (view/edit profile, delete own account)
+- [x] Lead Assignment (admin can assign leads to sales users)
+- [x] Assigned Leads Page (sales users can view their assigned leads)
 - [x] Docker Setup with docker-compose
 - [x] Loading, Empty, and Error States
 - [x] Form Validation on client and server
@@ -88,6 +90,8 @@ A full-stack MERN (MongoDB, Express, React, Node.js) application for managing sa
 | View own profile                     |  ✓   |     ✓     |
 | Edit own profile (name/email)        |  ✓   |     ✓     |
 | Delete own account                   |  ✗   |     ✓     |
+| Assign leads to sales users          |  ✓   |     ✗     |
+| View assigned leads                  |  ✗   |     ✓     |
 
 ---
 

@@ -55,6 +55,34 @@ export class LeadService {
     return !!lead;
   }
 
+  async assignLead(id: string, assignedTo: string | null): Promise<ILeadDocument | null> {
+    return Lead.findByIdAndUpdate(id, { assignedTo }, { new: true }).populate('createdBy', '_id name');
+  }
+
+  async getAssignedLeads(userId: string, page = 1, limit = 10): Promise<GetLeadsResult> {
+    const query: FilterQuery<ILeadDocument> = { assignedTo: userId };
+    const sortOrder = -1;
+    const skip = (page - 1) * limit;
+
+    const [leads, total] = await Promise.all([
+      Lead.find(query).sort({ createdAt: sortOrder }).skip(skip).limit(limit).populate('createdBy', '_id name'),
+      Lead.countDocuments(query),
+    ]);
+
+    const totalPages = Math.ceil(total / limit);
+
+    const meta: PaginationMeta = {
+      page,
+      limit,
+      total,
+      totalPages,
+      hasNextPage: page < totalPages,
+      hasPrevPage: page > 1,
+    };
+
+    return { leads, meta };
+  }
+
   async exportLeads(filters: LeadFilters, sort: 'latest' | 'oldest' = 'latest'): Promise<ILeadDocument[]> {
     const query: FilterQuery<ILeadDocument> = {};
 

@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { Pencil, Trash2, Eye } from 'lucide-react';
+import { Pencil, Trash2, Eye, UserPlus } from 'lucide-react';
 import { Badge } from '../../components/common';
 import { Lead, LeadStatus } from './leads.types';
 import type { User } from '../../types';
@@ -9,6 +9,7 @@ interface LeadsTableProps {
   currentUser: User;
   onEdit: (lead: Lead) => void;
   onDelete: (lead: Lead) => void;
+  onAssign?: (lead: Lead) => void;
 }
 
 const statusVariant: Record<LeadStatus, 'blue' | 'yellow' | 'green' | 'red'> = {
@@ -28,7 +29,7 @@ const formatDate = (dateStr: string): string => {
   }).format(new Date(dateStr));
 };
 
-export function LeadsTable({ leads, currentUser, onEdit, onDelete }: LeadsTableProps) {
+export function LeadsTable({ leads, currentUser, onEdit, onDelete, onAssign }: LeadsTableProps) {
   const navigate = useNavigate();
 
   return (
@@ -40,6 +41,11 @@ export function LeadsTable({ leads, currentUser, onEdit, onDelete }: LeadsTableP
               <div className="min-w-0">
                 <h3 className="truncate font-semibold text-gray-900 dark:text-gray-100">{lead.name}</h3>
                 <p className="mt-1 truncate text-sm text-gray-500 dark:text-gray-400">{lead.email}</p>
+                {lead.assignedTo && (
+                  <span className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400">
+                    Assigned
+                  </span>
+                )}
               </div>
               <Badge variant={statusVariant[lead.status]}>{lead.status}</Badge>
             </div>
@@ -65,9 +71,14 @@ export function LeadsTable({ leads, currentUser, onEdit, onDelete }: LeadsTableP
                 <Pencil className="w-4 h-4" /> Edit
               </button>
               {currentUser.role === 'admin' && (
-                <button type="button" onClick={() => onDelete(lead)} className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20">
-                  <Trash2 className="w-4 h-4" /> Delete
-                </button>
+                <>
+                  <button type="button" onClick={() => onAssign?.(lead)} className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm text-purple-600 hover:bg-purple-50 dark:text-purple-400 dark:hover:bg-purple-900/20">
+                    <UserPlus className="w-4 h-4" /> Assign
+                  </button>
+                  <button type="button" onClick={() => onDelete(lead)} className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20">
+                    <Trash2 className="w-4 h-4" /> Delete
+                  </button>
+                </>
               )}
             </div>
           </article>
@@ -78,7 +89,7 @@ export function LeadsTable({ leads, currentUser, onEdit, onDelete }: LeadsTableP
       <table className="w-full">
         <thead>
           <tr className="border-b border-gray-200 dark:border-gray-800">
-            {['Name', 'Email', 'Status', 'Source', 'Created At'].map((col) => (
+            {['Name', 'Email', 'Status', 'Source', 'Assigned', 'Created At'].map((col) => (
               <th key={col} className="text-left py-3 px-4 text-sm font-semibold text-gray-600 dark:text-gray-400">{col}</th>
             ))}
             <th className="text-right py-3 px-4 text-sm font-semibold text-gray-600 dark:text-gray-400">Actions</th>
@@ -95,6 +106,15 @@ export function LeadsTable({ leads, currentUser, onEdit, onDelete }: LeadsTableP
               <td className="py-3 px-4">
                 <Badge variant="default">{lead.source}</Badge>
               </td>
+              <td className="py-3 px-4">
+                {lead.assignedTo ? (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400">
+                    Assigned
+                  </span>
+                ) : (
+                  <span className="text-xs text-gray-400">Unassigned</span>
+                )}
+              </td>
               <td className="py-3 px-4 text-sm text-gray-500 dark:text-gray-500">{formatDate(lead.createdAt)}</td>
               <td className="py-3 px-4">
                 <div className="flex items-center justify-end gap-1">
@@ -105,9 +125,14 @@ export function LeadsTable({ leads, currentUser, onEdit, onDelete }: LeadsTableP
                     <Pencil className="w-4 h-4" />
                   </button>
                   {currentUser.role === 'admin' && (
-                    <button type="button" onClick={() => onDelete(lead)} className="p-1.5 rounded-lg text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20" title="Delete">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    <>
+                      <button type="button" onClick={() => onAssign?.(lead)} className="p-1.5 rounded-lg text-gray-400 dark:text-gray-500 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20" title="Assign">
+                        <UserPlus className="w-4 h-4" />
+                      </button>
+                      <button type="button" onClick={() => onDelete(lead)} className="p-1.5 rounded-lg text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20" title="Delete">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </>
                   )}
                 </div>
               </td>

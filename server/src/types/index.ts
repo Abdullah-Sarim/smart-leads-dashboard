@@ -36,6 +36,7 @@ export type ILead = {
   status: LeadStatus;
   source: LeadSource;
   createdBy: string;
+  assignedTo?: string;
   createdAt: Date;
   updatedAt: Date;
 };
