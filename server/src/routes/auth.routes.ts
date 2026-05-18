@@ -9,7 +9,7 @@ const router = Router();
 
 router.post('/register', validate(registerSchema), authController.register);
 router.post('/login', validate(loginSchema), authController.login);
-router.get('/profile', authenticate, authController.getProfile);
+router.get('/me', authenticate, authController.getProfile);
 router.get('/users', authenticate, authorize(UserRole.Admin), authController.getAllUsers);
 
 export default router;

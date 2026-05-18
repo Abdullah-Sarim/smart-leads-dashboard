@@ -1,48 +1,38 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { config } from '../config/index.js';
-import { AuthPayload, UserRole } from '../types/index.js';
-import { sendError } from '../utils/response.js';
+import { ApiError } from '../utils/ApiError.js';
+import { AuthPayload } from '../types/index.js';
 
-export interface AuthRequest extends Request {
-  user?: AuthPayload;
+declare global {
+  namespace Express {
+    interface Request {
+      user?: AuthPayload;
+    }
+  }
 }
 
 export const authenticate = (
-  req: AuthRequest,
-  res: Response,
+  req: Request,
+  _res: Response,
   next: NextFunction
 ): void => {
   try {
     const authHeader = req.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      sendError(res, 401, 'Access denied. No token provided.');
-      return;
+      throw ApiError.unauthorized('Access denied. No token provided');
     }
 
     const token = authHeader.split(' ')[1];
-
     const decoded = jwt.verify(token, config.jwt.secret) as AuthPayload;
     req.user = decoded;
     next();
   } catch (error) {
-    sendError(res, 401, 'Invalid or expired token.');
+    if (error instanceof jwt.JsonWebTokenError) {
+      next(ApiError.unauthorized('Invalid token'));
+    } else {
+      next(error);
+    }
   }
-};
-
-export const authorize = (...allowedRoles: UserRole[]) => {
-  return (req: AuthRequest, res: Response, next: NextFunction): void => {
-    if (!req.user) {
-      sendError(res, 401, 'Authentication required.');
-      return;
-    }
-
-    if (!allowedRoles.includes(req.user.role)) {
-      sendError(res, 403, 'Access denied. Insufficient permissions.');
-      return;
-    }
-
-    next();
-  };
 };
