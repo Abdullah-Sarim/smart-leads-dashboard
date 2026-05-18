@@ -1,3 +1,4 @@
+import mongoose, { FilterQuery } from 'mongoose';
 import { Lead, ILeadDocument } from '../models/index.js';
 import { LeadStatus, LeadSource } from '../types/index.js';
 
@@ -34,7 +35,7 @@ export class LeadService {
   }
 
   async getLeads(filters: LeadFilters, page = 1, limit = 10, sort: 'latest' | 'oldest' = 'latest'): Promise<GetLeadsResult> {
-    const query: Record<string, unknown> = {};
+    const query: FilterQuery<ILeadDocument> = {};
 
     if (filters.status) {
       query.status = filters.status;

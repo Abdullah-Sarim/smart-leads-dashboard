@@ -1,8 +1,8 @@
 import { leadService } from '../services/index.js';
 import { AuthRequest } from '../middleware/index.js';
-import { ApiError } from '../utils/ApiError.js';
 import { ApiResponse } from '../utils/ApiResponse.js';
 import { catchAsync } from '../utils/catchAsync.js';
+import { LeadStatus, LeadSource } from '../types/index.js';
 
 export const LeadController = {
   create: catchAsync(async (req: AuthRequest, res) => {
@@ -12,11 +12,17 @@ export const LeadController = {
   }),
 
   getAll: catchAsync(async (req: AuthRequest, res) => {
-    const { status, source, search, sort, page } = req.query as { status?: string; source?: string; search?: string; sort?: 'latest' | 'oldest'; page?: string };
+    const { status, source, search, sort, page } = req.query as {
+      status?: LeadStatus;
+      source?: LeadSource;
+      search?: string;
+      sort?: 'latest' | 'oldest';
+      page?: number;
+    };
 
     const result = await leadService.getLeads(
-      { status: status as undefined, source: source as undefined, search },
-      page ? Number(page) : 1,
+      { status, source, search },
+      page || 1,
       10,
       sort || 'latest'
     );
