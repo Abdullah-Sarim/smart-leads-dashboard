@@ -2,10 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { ProtectedRoute } from './app';
 import { LoginPage, RegisterPage } from './features/auth';
 import { Layout } from './components/layout';
-
-function DashboardPage() {
-  return <div>Dashboard</div>;
-}
+import { DashboardPage } from './features/leads';
 
 function LeadDetailPage() {
   return <div>Lead Detail</div>;
