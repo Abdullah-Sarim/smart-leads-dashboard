@@ -351,8 +351,8 @@ The API follows RESTful conventions with a consistent JSON response format.
 
 **Name:** Md Sarim Abdullah
 **Email:** abdullah1sarim1100@gmail.com
-**GitHub:** 
-**LinkedIn:** 
+**GitHub:** https://github.com/Abdullah-Sarim
+**LinkedIn:** https://www.linkedin.com/in/md-sarim-abdullah-ab9435292/
 **Portfolio:** https://abdullahsarim.vercel.app
 
 ---
