@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { config } from '../config/index.js';
 import { ApiError } from '../utils/ApiError.js';
-import { AuthPayload } from '../types/index.js';
+import { AuthPayload, UserRole } from '../types/index.js';
 
 declare global {
   namespace Express {
@@ -36,3 +36,23 @@ export const authenticate = (
     }
   }
 };
+
+export const authorizeRoles = (...allowedRoles: UserRole[]) => {
+  return (req: Request, _res: Response, next: NextFunction): void => {
+    if (!req.user) {
+      next(ApiError.unauthorized('Authentication required'));
+      return;
+    }
+
+    if (!allowedRoles.includes(req.user.role)) {
+      next(ApiError.forbidden('Access denied. Insufficient permissions'));
+      return;
+    }
+
+    next();
+  };
+};
+
+// Example usage:
+// router.get('/admin-only', authenticate, authorizeRoles(UserRole.Admin), handler);
+// router.get('/admin-or-sales', authenticate, authorizeRoles(UserRole.Admin, UserRole.Sales), handler);
