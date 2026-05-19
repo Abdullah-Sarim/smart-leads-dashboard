@@ -307,53 +307,89 @@ The API follows RESTful conventions with a consistent JSON response format.
 
 ## Deployment
 
-> **Note:** Deployment configuration will be added here once the app is deployed to a hosting platform.
+### Live URLs
 
-**Planned Deployment Targets:**
-- Frontend: Vercel / Netlify
-- Backend: Render / Railway
-- Database: MongoDB Atlas (cloud)
+- **Frontend:** https://lead-dashboard-three-sigma.vercel.app
+- **Backend:** https://smart-leads-dashboard-h2ma.onrender.com
+- **Database:** MongoDB Atlas (Cloud)
 
-**Steps to Deploy:**
+### Deployment Targets
 
-1. Set `NODE_ENV=production` in server environment
-2. Configure the frontend API base URL only if your deployment does not use the default `/api` proxy path
-3. Update CORS whitelist in server to include deployed frontend URL
-4. Configure environment variables in hosting platform dashboard
-5. Push to repository and connect CI/CD pipeline
+| Service      | Platform  | URL                              |
+|--------------|-----------|----------------------------------|
+| Frontend     | Vercel    | https://lead-dashboard-client.vercel.app |
+| Backend      | Render    | https://lead-dashboard-server-2.onrender.com |
+| Database     | MongoDB Atlas | Cloud cluster                  |
+
+### Deployment Steps
+
+#### Backend (Render)
+
+1. Push code to GitHub
+2. Connect GitHub repo to Render
+3. Set root directory to `server`
+4. Build command: `npm install`
+5. Start command: `npm start` (or `npm run start:prod`)
+6. Add environment variables:
+   - `NODE_ENV=production`
+   - `PORT=10000`
+   - `MONGO_URI=your-mongodb-atlas-connection-string`
+   - `JWT_SECRET=your-secret-key`
+   - `JWT_EXPIRES_IN=7d`
+
+#### Frontend (Vercel)
+
+1. Connect GitHub repo to Vercel
+2. Set root directory to `client`
+3. Build command: `npm run build`
+4. Output directory: `dist`
+5. Add environment variables:
+   - `VITE_API_URL=https://lead-dashboard-server-2.onrender.com`
+
+#### Database (MongoDB Atlas)
+
+1. Create a free cluster on MongoDB Atlas
+2. Create a database user with read/write permissions
+3. Get the connection string (replace password)
+4. Add the connection string to Render environment variables
 
 ---
 
 ## Screenshots
 
-> **Note:** Add screenshots here after deploying the application.
+### Login Page
+![Login Page](docs/screenshots/login.png)
 
-```
-┌─────────────────────────────────────────────────────────┐
-│                                                         │
-│   [Login Page]                                          │
-│   [Dashboard - Leads Table]                             │
-│   [Lead Form / Modal]                                   │
-│   [Export Preview]                                      │
-│                                                         │
-└─────────────────────────────────────────────────────────┘
-```
+### Dashboard
+![Dashboard](docs/screenshots/dashboard.png)
 
-*To add screenshots:*
-1. Run the app locally (`npm run dev`)
-2. Take screenshots of each key page
-3. Place images in `/docs/screenshots/` directory
-4. Reference them here with relative paths
+### Lead Table
+![Lead Table](docs/screenshots/lead-table.png)
+
+### Leads Form
+![Leads Form](docs/screenshots/leads-form.png)
+
+### Lead Detail
+![Lead Detail](docs/screenshots/lead-detail.png)
+
+### Admin - Users Management
+![Users Admin](docs/screenshots/users-admin.png)
+
+### Assigned Leads (Sales User)
+![Assigned Leads](docs/screenshots/assigned-lead.png)
+
+### Account Settings
+![Account](docs/screenshots/account.png)
 
 ---
 
 ## Author
 
-**Name:** Md Sarim Abdullah
-**Email:** abdullah1sarim1100@gmail.com
-**GitHub:** https://github.com/Abdullah-Sarim
-**LinkedIn:** https://www.linkedin.com/in/md-sarim-abdullah-ab9435292/
-**Portfolio:** https://abdullahsarim.vercel.app
+**Name:** Md Sarim Abdullah<br>
+**Email:** abdullah1sarim1100@gmail.com<br>
+**GitHub:** https://github.com/Abdullah-Sarim<br>
+**LinkedIn:** https://www.linkedin.com/in/md-sarim-abdullah-ab9435292/<br>
+**Portfolio:** https://abdullahsarim.vercel.app<br>
 
 ---
 
